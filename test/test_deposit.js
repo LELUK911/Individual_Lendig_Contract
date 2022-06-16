@@ -49,6 +49,58 @@ contract("LendingContract", accounts =>{
             
     })
 
+    it("Increase deposit + chek ", async ()=>{
+      const usdc = await mockUsdc.deployed();
+      const lendingP = await LendingPage.deployed();
+      
+      
+      let balance  = await usdc.balanceOf(account);
+      console.log("balance before " + String(balance))
+
+
+      let result  =await lendingP.findContractLending(account,1)
+      console.log("before" + result)
+      // already know idContract to increas
+      await usdc.approve(lendingP.address,5555)
+      await lendingP.increasDeposit(1, 5555)
+      
+      balance  = await usdc.balanceOf(account);
+      console.log("balance before " + String(balance))
+
+      result  = await lendingP.findContractLending(account,1)
+      console.log("after " + result)   
+    })
+
+
+  it("Decrease deposit + chek ", async ()=>{
+    const lendingP = await LendingPage.deployed();
+    const weth = await mockWeth.deployed();
+
+
+    let balance  = await weth.balanceOf(account);
+    console.log("balance before " + String(balance))
+    let result  =await lendingP.findContractLending(account,2)
+    console.log("before " + result)
+    // already know idContract to increas
+    await lendingP.decreasDeposit(1, 2348)
+    
+    balance  = await weth.balanceOf(account);
+    console.log("balance after" + String(balance))
+
+    result  = await lendingP.findContractLending(account,2)
+    console.log("after" + result)       
+  })
+  
+
+
+
+
+
+
+
+
+
+
     // SERCH FUNCTION 
     it("Question function ->find Asset <-", async ()=>{
       const lendingP = await LendingPage.deployed();
@@ -77,6 +129,35 @@ contract("LendingContract", accounts =>{
           //console.log(result) CHECK
         }
     })
+
+
+
+    it("Delete deposit", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      const weth = await mockWeth.deployed();
+
+  
+      let balance  = await weth.balanceOf(account);
+      console.log("balance before" + String(balance))
+      let result  =await lendingP.findContractLending(account,2)
+      console.log("before" + result)
+      // already know idContract to increas
+      //await lendingP.deleteContract(2)
+      balance  = await weth.balanceOf(account);
+      console.log("balance after" + String(balance))
+      result  = await lendingP.findContractLending(account,2)
+      console.log("after" + result)       
+    })
+    
+
+
+
+
+
+
+
+
+
     // CHECK check autorization
 
     it("Not Autorizate Set NewAsset ", async () => {
