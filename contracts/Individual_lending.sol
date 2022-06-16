@@ -8,14 +8,12 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract lendingPage is Ownable,ReentrancyGuard {
+    //library
     using Counters for Counters.Counter;
-    
-    
     //function variable
     Counters.Counter private Id; // id every lending contract
     address[] private assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)
     uint private minPenality;
-    
     // User
     struct LendingContract {
         address asset;
@@ -27,24 +25,21 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address collateral;
     }
     mapping(address => mapping(uint=>LendingContract)) private userLendingContract;
-
-
-
+    mapping(address => uint[])listContractUser;
     //-------------------------------//
-
     constructor(uint _minpenality) Ownable() ReentrancyGuard(){
         Id.increment();
         minPenality = _minpenality;
     }
-
     // INTERNAL FUNCTION 
-
     function _setAssettAvvalible(address _newAsset) internal{
         require(_newAsset != address(0), "invalid address");
+        require(!_findAsset(_newAsset),"Assett already in list");
         assetAvvalible.push(_newAsset);
         emit NewAssetAvvalible(_newAsset, block.timestamp);   
     }
-
+    //-----> Serch function 
+    
     function _findAsset(address _asset) internal view returns(bool){
         for(uint i = 0; i<assetAvvalible.length; i++){
             if(assetAvvalible[i]==_asset){
@@ -54,6 +49,18 @@ contract lendingPage is Ownable,ReentrancyGuard {
         return false;
     }
 
+    function _getAssettAvvalible()internal view returns (address[] memory ){
+        return assetAvvalible; 
+    }
+
+ 
+    //-----> Search function user 
+    function _listContractXuser(address _user) internal view returns(uint[] memory){
+       return listContractUser[_user];
+    }
+     function _findContractLending(address _to,uint _id)internal view returns(LendingContract memory){
+        return userLendingContract[_to][_id];
+    }
 
     function _deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral)internal {
         //check
@@ -83,18 +90,13 @@ contract lendingPage is Ownable,ReentrancyGuard {
         emit NewContractDeposit(
             Id.current(),_asset,_amount,_apr,_deadline,_penality, _collateral
         );
+        listContractUser[_to].push(Id.current());
         Id.increment();
 
 
     }
-
-    function _findContractLending(address _to,uint _id)internal view returns(LendingContract memory){
-        return userLendingContract[_to][_id];
-    }
-
-
+   
     // EVENT 
-
      event NewAssetAvvalible(address indexed asset, uint timeStart);
      event NewContractDeposit(
         uint Id,
@@ -106,20 +108,27 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address indexed collateral
      );
 
-
-
     // EXTERNAL FUNCTION
     function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
         _setAssettAvvalible(_newAsset);
     } 
-
     function findAsset(address _asset) external view returns(bool){
         return _findAsset(_asset);
     }
-
     function deposit(address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral) external nonReentrant() {
         _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral);
     }
+    function listContractXuser(address _user) external view returns(uint[] memory){
+        return _listContractXuser(_user);
+    }
+    function getAssettAvvalible()external view returns (address[] memory ){
+        return _getAssettAvvalible(); 
+    }
+    function findContractLending(address _to,uint _id)external view returns(LendingContract memory){
+        return _findContractLending(_to, _id);
+    }
+
+ 
 
 
 
