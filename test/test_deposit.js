@@ -29,13 +29,25 @@ contract("LendingContract", accounts =>{
 
         //await usdc.transfer(account2,100000);
         await usdc.approve(lendingP.address,100000)
+        //_deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)
+        //function deposit(,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)
+        
+        /**
+         *   function deposit(address _asset,uint _amount||||,uint _apr,|||uint _deadline||,uint _penality,address _collateral,uint _rateCollateral) external nonReentrant() {
+        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral,_rateCollateral);
+    }
+         */
+        
+        
         await lendingP.deposit(
-             usdc.address,
-             100000,
-             5,
-             1000,
-             8,
-            weth.address)
+             usdc.address,// address assett lendinding
+             100000,// amount
+             5, // apr
+             1000,//death line
+             8,//penality
+             weth.address, // address collateral
+             2,//rate
+           )
 
         await weth.approve(lendingP.address,100000)
         await lendingP.deposit(
@@ -44,7 +56,9 @@ contract("LendingContract", accounts =>{
              12,
              8888,
              10,
-            weth.address)
+             usdc.address,
+             2,
+            )
                 
             
     })
@@ -77,15 +91,15 @@ contract("LendingContract", accounts =>{
       const weth = await mockWeth.deployed();
 
 
-      let balance  = await weth.balanceOf(account);
-      console.log("balance before " + String(balance))
+      //let balance  = await weth.balanceOf(account);
+      //console.log("balance before " + String(balance))
       //let result  =await lendingP.findContractLending(account,2)
       //console.log("before " + result)
       // already know idContract to increas
       await lendingP.decreasDeposit(2, 500)
 
-      balance  = await weth.balanceOf(account);
-      console.log("balance after " + String(balance))
+      //balance  = await weth.balanceOf(account);
+      //console.log("balance after " + String(balance))
 
       //result  = await lendingP.findContractLending(account,2)
       //console.log("after" + result)       

@@ -26,9 +26,11 @@ contract lendingPage is Ownable,ReentrancyGuard {
         uint penality;
         address collateral;
         uint _amountBorrow;
+        uint rateCollateral;
     }
     mapping(address => mapping(uint=>LendingContract)) private userLendingContract;
     mapping(address => uint[])listContractUser;
+    uint[] private listContract;
     //-------------------------------//
     constructor(uint _minpenality) Ownable() ReentrancyGuard(){
         Id.increment();
@@ -41,8 +43,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         assetAvvalible.push(_newAsset);
         emit NewAssetAvvalible(_newAsset, block.timestamp);   
     }
-    //-----> Serch function 
-    
+    //-----> Serch function  
     function _findAsset(address _asset) internal view returns(bool){
         for(uint i = 0; i<assetAvvalible.length; i++){
             if(assetAvvalible[i]==_asset){
@@ -51,11 +52,9 @@ contract lendingPage is Ownable,ReentrancyGuard {
         }
         return false;
     }
-
     function _getAssettAvvalible()internal view returns (address[] memory ){
         return assetAvvalible; 
     }
- 
     //-----> Search function user 
     function _listContractXuser(address _user) internal view returns(uint[] memory){
        return listContractUser[_user];
@@ -75,11 +74,24 @@ contract lendingPage is Ownable,ReentrancyGuard {
             return (index,response);
         
     }
+    function _findContractAvvalible(uint _IdFind)internal view returns(uint,bool){
+         uint index = 0;
+         bool response = false;
+         for(uint i=0 ;i<listContract.length;i++){
+             if (_IdFind == listContract[i]){
+                 index = i;
+                 response = true;
+             }
+         }
+         return (index,response);
+     
+    }
+   
     // ----> User Function
-
-    function _deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral)internal {
+    function _deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)internal {
         //check
         require(_to != address(0), "invalid address");
+        require(_asset != _collateral, "collateral not valid");
         require(_findAsset(_asset),"asset don't found");
         require(_findAsset(_collateral),"collateral don't found");
         require(IERC20(_asset).balanceOf(_to) >= _amount,"balance user low");
@@ -101,7 +113,8 @@ contract lendingPage is Ownable,ReentrancyGuard {
             _deadline,
             _penality,
             _collateral,
-            0
+            0,
+            _rateCollateral
         );
         // update status global variable
         userLendingContract[_to][Id.current()] = newContract;
@@ -109,12 +122,11 @@ contract lendingPage is Ownable,ReentrancyGuard {
             Id.current(),_to,_asset,_amount,_apr,_deadline,_penality, _collateral
         );
         listContractUser[_to].push(Id.current());
+        listContract.push(Id.current());
         Id.increment();
 
 
     }
-
-
     function _increasDeposit(address _to,uint _idContract, uint _increasAmount) internal  contractOwner(_to, _idContract){
         require(_increasAmount > 0, "increas must be plus 0");
         require(IERC20(_findContractLending(_to,_idContract).asset).balanceOf(_to) >= _increasAmount,"balance user low");
@@ -135,7 +147,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
     function _decreasDeposit(address _to,uint _idContract, uint _decreasAmount) internal contractOwner(_to, _idContract){
         require(_decreasAmount > 0, "increas must be plus 0");
         require(
-            _findContractLending(_to,_idContract).amountAvvalible >= _decreasAmount, "Assett avvalible insufficient for thios whidrow"
+            _findContractLending(_to,_idContract).amountAvvalible >= _decreasAmount, "Assett avvalible insufficient for this whidrow"
         );
 
         userLendingContract[_to][_idContract].amountAvvalible -= _decreasAmount;
@@ -171,19 +183,64 @@ contract lendingPage is Ownable,ReentrancyGuard {
         }else{
             listContractUser[_to].pop(); // clean array
         }
-
-       
-
+          if(listContract.length > 0){
+             // serch index of delete
+            (uint indexDelete, bool response) = _findContractAvvalible(_idContract);
+            if(response){
+                //clean array
+                listContract[indexDelete] = listContract[listContract.length -1];
+                listContract.pop();
+            }
+        }else{
+            listContract.pop(); // clean array
+        }
         uint balanceContract = IERC20(assetWidrow).balanceOf(address(this)); 
         IERC20(assetWidrow).transfer(_to,amountRepay);
         require(balanceContract -amountRepay == IERC20(assetWidrow).balanceOf(address(this)));
 
         emit DeleteContractDeposit(_to, deleteId);
-
-
     }
+    
+    // EXTERNAL FUNCTION
+    function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
+        _setAssettAvvalible(_newAsset);
+    } 
+    function findAsset(address _asset) external view returns(bool){
+        return _findAsset(_asset);
+    }
+    function deposit(address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral) external nonReentrant() {
+        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral,_rateCollateral);
+    }
+    function listContractXuser(address _user) external view returns(uint[] memory){
+        return _listContractXuser(_user);
+    }
+    function getAssettAvvalible()external view returns (address[] memory ){
+        return _getAssettAvvalible(); 
+    }
+    function findContractLending(address _to,uint _id)external view returns(LendingContract memory){
+        return _findContractLending(_to, _id);
+    }
+     function increasDeposit(uint _idContract, uint _increasAmount) external nonReentrant(){
+        _increasDeposit(msg.sender, _idContract, _increasAmount);
+    }
+    function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
+        _decreasDeposit(msg.sender, _idContract, _decreasAmount);
+    }
+    function deleteContract(uint _idContract) external nonReentrant(){
+        _deleteContract(msg.sender, _idContract);
+    }
+    //// ^^^^^TESTED^^^^^
+    /// vvvvvvNON TESTEDvvvvv
 
-   
+
+
+    // MODIFIER
+    modifier contractOwner(address _to,uint _idContract){
+        require(
+           _findContractLending(_to,_idContract).owner == _to, "Not owner this contract" 
+        );
+        _;
+    }
     // EVENT 
 
      event NewAssetAvvalible(address indexed asset, uint timeStart);
@@ -213,53 +270,208 @@ contract lendingPage is Ownable,ReentrancyGuard {
         uint indexed id
      );
 
-    // EXTERNAL FUNCTION
-    function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
-        _setAssettAvvalible(_newAsset);
-    } 
-    function findAsset(address _asset) external view returns(bool){
-        return _findAsset(_asset);
-    }
-    function deposit(address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral) external nonReentrant() {
-        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral);
-    }
-    function listContractXuser(address _user) external view returns(uint[] memory){
-        return _listContractXuser(_user);
-    }
-    function getAssettAvvalible()external view returns (address[] memory ){
-        return _getAssettAvvalible(); 
-    }
-    function findContractLending(address _to,uint _id)external view returns(LendingContract memory){
-        return _findContractLending(_to, _id);
-    }
-    //// ^^^^^TESTED^^^^^
-    /// vvvvvvNON TESTEDvvvvv
-     function increasDeposit(uint _idContract, uint _increasAmount) external nonReentrant(){
-        _increasDeposit(msg.sender, _idContract, _increasAmount);
-    }
-    function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
-        _decreasDeposit(msg.sender, _idContract, _decreasAmount);
-    }
-    function deleteContract(uint _idContract) external nonReentrant(){
-        _deleteContract(msg.sender, _idContract);
-    }
-
-
-    // MODIFIER
-
-    modifier contractOwner(address _to,uint _idContract){
-        require(
-           _findContractLending(_to,_idContract).owner == _to, "Not owner this contract" 
-        );
-        _;
-    }
-
 
  
 
 
 
     
+
+
+
+
+// BORROW
+
+function _mockOracleBorrow() internal pure returns(uint price){
+    price = 1000;
+}
+
+function _mockOracleCollateral() internal pure returns(uint price){
+    price = 1000;
+}
+
+//Borrower
+
+struct Borrower{
+    address owner;
+    uint idContract;
+    address assetBorrow;
+    uint ammounBorrow;
+    //uint heltBorrow;
+    address assetCollaterl;
+    uint amountCollateral;
+    uint liquidationThreshold;
+}
+
+
+
+
+// list of borrower for idContract
+
+
+
+mapping(uint => Borrower[]) private borrowersXid; 
+
+    // chiediamo anche l'address del lender e va fanculo
+function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
+    // serve per sapere l'indice e se il contratto esiste
+    (,bool response) = _findArrayindexContract(_lender,_idContract);
+    require(response,"contract dont exist");
+    // il contratto ha i soldi da prendere?
+    require(userLendingContract[_lender][_idContract].amountAvvalible >= _amountBorrow,"Amount avvalible low");
+
+   
+    uint _priceCollateralETH = _mockOracleCollateral();// fix with true oracle
+    uint _priceBorrowEth = _mockOracleBorrow();// fix with true oracle
+    uint _rateLiquidation = userLendingContract[_lender][_idContract].rateCollateral;
+
+    (bool responseSrc,) = _serchIndexBorrowerXContract(_idContract, _to);
+   
+        if(!responseSrc){
+            // nuovo cliente????
+            // conti nuovi
+            require(_healFactor(_priceCollateralETH, _priceBorrowEth) > userLendingContract[_lender][_idContract].rateCollateral);
+            IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
+            Borrower memory newBorrower = Borrower(
+                                                _to,
+                                                _idContract,
+                                                userLendingContract[_lender][_idContract].asset,
+                                                _amountBorrow,
+                                                //uint heltBorrow;
+                                                _assettCollateral,
+                                                _amountCollateral,
+                                                _liquidationThresold(_priceCollateralETH, _priceBorrowEth, _rateLiquidation)
+                                                );
+
+            /**
+                da fare
+                    - aggiornare i dati del lender
+                    - Verificare se si puo creare un meccanismo di controllo delle coin che arrivano
+                    - settare i dati del borrower
+                     
+            
+             */
+
+        }else{
+            // gia cliente??
+            // aggiorniamo i conti vecchi 
+
+        }
+
+    
+    }
+
+
+    function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
+        for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+            if(borrowersXid[_idContract][i].owner == _borrower){
+                return (true,i);
+            }
+        }
+        return (false,0);
+    }
+
+     function _serchBorrowerPositionXContract(uint _idContract,address _borrower) internal view returns(Borrower memory){
+        for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+            if(borrowersXid[_idContract][i].owner == _borrower){
+                return (borrowersXid[_idContract][i]);
+            }
+        }
+        revert("Borrower for this contract not present");
+    }
+
+
+
+
+
+
+
+    function _healFactor(uint _priceCollateralETH, uint _priceBorrowEth) internal pure returns(uint){
+        return (_priceCollateralETH/_priceBorrowEth);
+    }
+
+    function _liquidationThresold(uint _priceCollateralETH, uint _priceBorrowEth,uint _rateLiquidation) internal pure returns(uint){
+        return (
+            (_priceCollateralETH * _priceBorrowEth)/(_rateLiquidation * _priceBorrowEth)
+        );
+    }
+
+
+
+
+
+
+
+/**
+    1 -> Valore Asset sia depositati che collateralizati
+            Soluzione -> Oracolo
+            Problema -> Calcolo matematico 
+    
+    2 -> Ogni tentativo di borrow deve prima verificare se esiste margine per farlo -> ok
+
+    3 -> Ripagare il Borrow e cambiare il margine
+            -> Applicare qui la Fee ? 
+
+    4 -> Liquidazione collatterale, 
+            -> problema -> Calcolo matematico 
+            -> Quanto liquidare?
+            -> Come cambiano i valori dopo la liquidazione?
+            -> Voglio dare al lender la possibilità di vendere a mercato la liquidazione? 
+            -> Gestione delle fee da pagare al protocollo 
+    
+    5 -> a carico di chi sono le fee? lender o borrower ?
+            -> dove prendere le fee? 
+                -> dall interesse del lender
+                    -> come lo calcolo?
+                    -> quando le prendo ?
+                -> dal pagamento del debito ? 
+                    -> è più vantaggioso progettualmente
+                    -> è competitiva come strategia?
+            -> HOW MUCH ????
+                -> 0.50% su ogni pagamento ???? -> tariffa standard
+                -> 1% fino al 5%        Tariffa liquidazione
+                -> 2% dal 5% al 10%     Tariffa liquidazione
+                -> 4% dal 10% al 20%    Tariffa liquidazione
+                -> 5% dal 20% al 30%    Tariffa liquidazione
+                -> 6% dal 30% al 100%   Tariffa liquidazione
+                    -> Vendere a mercato e realizare subito usd?
+                    -> detenere gli asset? 
+                    -> miso detenere blue chips e dumpare il resto.ò
+ 
+ 
+ 
+   function calculateHealthFactorFromBalances(
+    uint256 totalCollateralInETH,
+    uint256 totalDebtInETH,
+    uint256 liquidationThreshold
+  ) internal pure returns (uint256) {
+    if (totalDebtInETH == 0) return uint256(-1);
+
+    return (totalCollateralInETH.percentMul(liquidationThreshold)).wadDiv(totalDebtInETH);
+  }
+ 
+ 
+ 
+ 
+ 
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -269,12 +481,5 @@ contract lendingPage is Ownable,ReentrancyGuard {
  
 
 
- // REMEBER
-
- --> GESTIRE  
-    A. caso in cui si ripaga il prestito + interessi e si ha un avvalible + alto di amount
-    B. + borrowers x contratto
-    C.  
- 
  
  */
