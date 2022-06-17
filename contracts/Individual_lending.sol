@@ -158,6 +158,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         ); 
         uint amountRepay = userLendingContract[_to][_idContract].amountAvvalible;
         uint deleteId = userLendingContract[_to][_idContract].id;
+        address assetWidrow =_findContractLending(_to,_idContract).asset;
         delete userLendingContract[_to][_idContract];
         if(listContractUser[_to].length > 0){
              // serch index of delete
@@ -170,9 +171,12 @@ contract lendingPage is Ownable,ReentrancyGuard {
         }else{
             listContractUser[_to].pop(); // clean array
         }
-        uint balanceContract = IERC20(_findContractLending(_to,_idContract).asset).balanceOf(address(this)); 
-        IERC20(_findContractLending(_to,_idContract).asset).transfer(_to,amountRepay);
-        require(balanceContract -amountRepay == IERC20(_findContractLending(_to,_idContract).asset).balanceOf(address(this)));
+
+       
+
+        uint balanceContract = IERC20(assetWidrow).balanceOf(address(this)); 
+        IERC20(assetWidrow).transfer(_to,amountRepay);
+        require(balanceContract -amountRepay == IERC20(assetWidrow).balanceOf(address(this)));
 
         emit DeleteContractDeposit(_to, deleteId);
 

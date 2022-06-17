@@ -49,48 +49,48 @@ contract("LendingContract", accounts =>{
             
     })
 
-    it("Increase deposit + chek ", async ()=>{
+    it("Increase deposit + chek (no borrow)", async ()=>{
       const usdc = await mockUsdc.deployed();
       const lendingP = await LendingPage.deployed();
       
       
-      let balance  = await usdc.balanceOf(account);
-      console.log("balance before " + String(balance))
+      //let balance  = await usdc.balanceOf(account);
+      //console.log("balance before " + String(balance))
 
 
-      let result  =await lendingP.findContractLending(account,1)
-      console.log("before" + result)
+      //let result  =await lendingP.findContractLending(account,1)
+      //console.log("before" + result)
       // already know idContract to increas
       await usdc.approve(lendingP.address,5555)
       await lendingP.increasDeposit(1, 5555)
       
-      balance  = await usdc.balanceOf(account);
-      console.log("balance before " + String(balance))
-
-      result  = await lendingP.findContractLending(account,1)
-      console.log("after " + result)   
+      //balance  = await usdc.balanceOf(account);
+      //console.log("balance before " + String(balance))
+//
+      //result  = await lendingP.findContractLending(account,1)
+      //console.log("after " + result)   
     })
 
 
-  it("Decrease deposit + chek ", async ()=>{
-    const lendingP = await LendingPage.deployed();
-    const weth = await mockWeth.deployed();
+    it("Decrease deposit + chek (no Borrow)", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      const weth = await mockWeth.deployed();
 
 
-    let balance  = await weth.balanceOf(account);
-    console.log("balance before " + String(balance))
-    let result  =await lendingP.findContractLending(account,2)
-    console.log("before " + result)
-    // already know idContract to increas
-    await lendingP.decreasDeposit(1, 2348)
-    
-    balance  = await weth.balanceOf(account);
-    console.log("balance after" + String(balance))
+      let balance  = await weth.balanceOf(account);
+      console.log("balance before " + String(balance))
+      //let result  =await lendingP.findContractLending(account,2)
+      //console.log("before " + result)
+      // already know idContract to increas
+      await lendingP.decreasDeposit(2, 500)
 
-    result  = await lendingP.findContractLending(account,2)
-    console.log("after" + result)       
-  })
-  
+      balance  = await weth.balanceOf(account);
+      console.log("balance after " + String(balance))
+
+      //result  = await lendingP.findContractLending(account,2)
+      //console.log("after" + result)       
+    })
+
 
 
 
@@ -132,21 +132,21 @@ contract("LendingContract", accounts =>{
 
 
 
-    it("Delete deposit", async ()=>{
+    it("Delete deposit (no borrow)", async ()=>{
       const lendingP = await LendingPage.deployed();
       const weth = await mockWeth.deployed();
 
   
-      let balance  = await weth.balanceOf(account);
-      console.log("balance before" + String(balance))
-      let result  =await lendingP.findContractLending(account,2)
-      console.log("before" + result)
+      //let balance  = await weth.balanceOf(lendingP.address);
+      //console.log("balance before" + String(balance))
+      //let result  =await lendingP.findContractLending(account,2)
+      //console.log("before" + result)
       // already know idContract to increas
-      //await lendingP.deleteContract(2)
-      balance  = await weth.balanceOf(account);
-      console.log("balance after" + String(balance))
-      result  = await lendingP.findContractLending(account,2)
-      console.log("after" + result)       
+      await lendingP.deleteContract(2)
+      //balance  = await weth.balanceOf(lendingP.address);
+      //console.log("balance after" + String(balance))
+      //result  = await lendingP.findContractLending(account,2)
+      //console.log("after" + result)       
     })
     
 
