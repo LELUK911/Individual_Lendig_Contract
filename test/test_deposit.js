@@ -5,7 +5,7 @@ const LendingPage = artifacts.require('lendingPage');
 
 const truffleAssert = require("truffle-assertions");
 
-contract("LendingContract", accounts =>{
+skip.contract("LendingContract", accounts =>{
     const account = accounts[0];
     const account2 = accounts[1];
     
@@ -24,19 +24,9 @@ contract("LendingContract", accounts =>{
         const weth = await mockWeth.deployed();
         const lendingP = await LendingPage.deployed();
 
-        //await lendingP.setAssettAvvalible(usdc.address)
-        //await lendingP.setAssettAvvalible(weth.address)
-
-        //await usdc.transfer(account2,100000);
+       
         await usdc.approve(lendingP.address,100000)
-        //_deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)
-        //function deposit(,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)
-        
-        /**
-         *   function deposit(address _asset,uint _amount||||,uint _apr,|||uint _deadline||,uint _penality,address _collateral,uint _rateCollateral) external nonReentrant() {
-        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral,_rateCollateral);
-    }
-         */
+  
         
         
         await lendingP.deposit(

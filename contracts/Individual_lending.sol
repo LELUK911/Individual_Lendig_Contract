@@ -27,10 +27,24 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address collateral;
         uint _amountBorrow;
         uint rateCollateral;
+        uint amountCollateral;
     }
     mapping(address => mapping(uint=>LendingContract)) private userLendingContract;
     mapping(address => uint[])listContractUser;
     uint[] private listContract;
+    // borrower
+    struct Borrower{
+        address owner;
+        uint idContract;
+        address assetBorrow;
+        uint ammounBorrow; // da correggere
+        //uint heltBorrow;
+        address assetCollaterl;
+        uint amountCollateral;
+        uint liquidationThreshold;
+    }
+    mapping(uint => Borrower[]) private borrowersXid; 
+
     //-------------------------------//
     constructor(uint _minpenality) Ownable() ReentrancyGuard(){
         Id.increment();
@@ -42,6 +56,17 @@ contract lendingPage is Ownable,ReentrancyGuard {
         require(!_findAsset(_newAsset),"Assett already in list");
         assetAvvalible.push(_newAsset);
         emit NewAssetAvvalible(_newAsset, block.timestamp);   
+    }
+    function _healFactor(uint _priceCollateralETH, uint _priceBorrowEth) internal pure returns(uint){
+        return (_priceCollateralETH/_priceBorrowEth);
+    }
+    function _liquidationThresold( uint _priceBorrowEth,uint _rateLiquidation) internal pure returns(uint){
+        return (
+            //uint _priceCollateralETH,
+            //(_priceCollateralETH * _priceBorrowEth)/(_rateLiquidation * _priceBorrowEth)
+            _priceBorrowEth * _rateLiquidation 
+
+        );
     }
     //-----> Serch function  
     function _findAsset(address _asset) internal view returns(bool){
@@ -86,6 +111,23 @@ contract lendingPage is Ownable,ReentrancyGuard {
          return (index,response);
      
     }
+    //------> Search function Borrower
+    function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
+      for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+          if(borrowersXid[_idContract][i].owner == _borrower){
+              return (true,i);
+          }
+      }
+      return (false,0);
+    }
+    function _serchBorrowerPositionXContract(uint _idContract,address _borrower) internal view returns(Borrower memory){
+       for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+           if(borrowersXid[_idContract][i].owner == _borrower){
+               return (borrowersXid[_idContract][i]);
+           }
+       }
+       revert("Borrower for this contract not present");
+    }
    
     // ----> User Function
     function _deposit(address _to,address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral)internal {
@@ -114,7 +156,8 @@ contract lendingPage is Ownable,ReentrancyGuard {
             _penality,
             _collateral,
             0,
-            _rateCollateral
+            _rateCollateral,
+            0
         );
         // update status global variable
         userLendingContract[_to][Id.current()] = newContract;
@@ -200,6 +243,93 @@ contract lendingPage is Ownable,ReentrancyGuard {
 
         emit DeleteContractDeposit(_to, deleteId);
     }
+    //BORROW FUNCTION
+    function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
+        (,bool response) = _findArrayindexContract(_lender,_idContract);
+        require(response,"contract dont exist");
+        require(userLendingContract[_lender][_idContract].amountAvvalible >= _amountBorrow,"Amount avvalible low");
+        //// controll and utility  local var
+        //uint _priceCollateralETH = _mockOracleCollateral();// fix with true oracle
+        uint _priceBorrowEth = _mockOracleBorrow();// fix with true oracle
+        uint _rateLiquidation = userLendingContract[_lender][_idContract].rateCollateral;
+        (bool responseSrc,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
+        //check before act borrow 
+      
+    
+        if(!responseSrc){
+            _newBorrower(_to,_lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation);
+        }else{
+            require(_liquidationThresold(
+                          //_priceCollateralETH*borrowersXid[_idContract][indexBorrow].ammounBorrow,
+                          _priceBorrowEth*borrowersXid[_idContract][indexBorrow].amountCollateral,
+                           _rateLiquidation) > _mockOracleBorrow());
+            _oldBorrower(_to, _lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation, indexBorrow);
+
+        }
+
+        emit Borrow(_to, _idContract, _amountBorrow);
+    }
+
+    function _oldBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation,uint indexBorrow)internal {
+        // gia cliente??
+        // aggiorniamo i conti vecchi 
+        // aggiungere al controllo le coin gia depositate e prese in prestito 
+        require(_healFactor(_mockOracleCollateral() *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
+                             _mockOracleBorrow() *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
+                             )> userLendingContract[_lender][_idContract].rateCollateral); 
+
+        uint balanceBefore = IERC20(_assettCollateral).balanceOf(address(this));
+            IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
+            require( balanceBefore + _amountCollateral == IERC20(_assettCollateral).balanceOf(address(this)));
+
+            borrowersXid[_idContract][indexBorrow].ammounBorrow += _amountBorrow;// aggiornata la variabile globale
+            borrowersXid[_idContract][indexBorrow].amountCollateral += _amountCollateral;// aggiornata la variabile globale
+            // updata thresoldLiquidation 
+            borrowersXid[_idContract][indexBorrow].liquidationThreshold =
+                    _liquidationThresold(
+                        //_mockOracleCollateral()*borrowersXid[_idContract][indexBorrow].amountCollateral,
+                        _mockOracleBorrow()*borrowersXid[_idContract][indexBorrow].ammounBorrow,
+                         _rateLiquidation);
+
+            userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
+            userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
+
+            IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
+
+    }
+
+    function _newBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation)internal {
+        // nuovo cliente????
+        // conti nuovi
+        require(_healFactor(_mockOracleCollateral() * _amountCollateral, _mockOracleBorrow()*_amountBorrow) > userLendingContract[_lender][_idContract].rateCollateral);
+        // spreco di gas????
+        uint balanceBefore = IERC20(_assettCollateral).balanceOf(address(this));
+        IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
+        require( balanceBefore + _amountCollateral == IERC20(_assettCollateral).balanceOf(address(this)));
+        // preparazione dei dati del borrower non ancora settat nella variabile locale
+        Borrower memory newBorrower = Borrower(
+                                            _to,
+                                            _idContract,
+                                            userLendingContract[_lender][_idContract].asset,
+                                            _amountBorrow,
+                                            //uint heltBorrow;
+                                            _assettCollateral,
+                                            _amountCollateral,
+                                            _liquidationThresold(
+                                                //_mockOracleCollateral()*_amountCollateral,
+                                                 _mockOracleBorrow()*_amountBorrow,
+                                                 _rateLiquidation)
+                                            );
+
+        borrowersXid[_idContract].push(newBorrower);// aggiornata la variabile locale
+        // aggiorniamo i dati del lender
+
+        userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
+
+        userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
+
+        IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
+    }
     
     // EXTERNAL FUNCTION
     function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
@@ -231,7 +361,17 @@ contract lendingPage is Ownable,ReentrancyGuard {
     }
     //// ^^^^^TESTED^^^^^
     /// vvvvvvNON TESTEDvvvvv
+    function executeBorrow(uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) external nonReentrant(){
+        _executeBorrow(msg.sender, _idContract, _lender, _amountBorrow, _assettCollateral, _amountCollateral);
+    }
+    function serchBorrowerPositionXContract(uint _idContract,address _borrower) external view returns (Borrower memory){
+        return _serchBorrowerPositionXContract(_idContract, _borrower);
 
+    }
+    function serchIndexBorrowerXContract(uint _idContract,address _borrower)external view returns(uint){
+        (,uint idFind) = _serchIndexBorrowerXContract(_idContract, _borrower);
+        return idFind;
+    }
 
 
     // MODIFIER
@@ -269,145 +409,22 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address indexed owner,
         uint indexed id
      );
+     event Borrow( address indexed Borrower,uint indexed Id_Contract, uint amount);
 
+    // mock function
 
- 
-
-
-
-    
-
-
-
-
-// BORROW
-
-function _mockOracleBorrow() internal pure returns(uint price){
-    price = 1000;
-}
-
-function _mockOracleCollateral() internal pure returns(uint price){
-    price = 1000;
-}
-
-//Borrower
-
-struct Borrower{
-    address owner;
-    uint idContract;
-    address assetBorrow;
-    uint ammounBorrow;
-    //uint heltBorrow;
-    address assetCollaterl;
-    uint amountCollateral;
-    uint liquidationThreshold;
-}
-
-
-
-
-// list of borrower for idContract
-
-
-
-mapping(uint => Borrower[]) private borrowersXid; 
-
-    // chiediamo anche l'address del lender e va fanculo
-function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
-    // serve per sapere l'indice e se il contratto esiste
-    (,bool response) = _findArrayindexContract(_lender,_idContract);
-    require(response,"contract dont exist");
-    // il contratto ha i soldi da prendere?
-    require(userLendingContract[_lender][_idContract].amountAvvalible >= _amountBorrow,"Amount avvalible low");
-
-   
-    uint _priceCollateralETH = _mockOracleCollateral();// fix with true oracle
-    uint _priceBorrowEth = _mockOracleBorrow();// fix with true oracle
-    uint _rateLiquidation = userLendingContract[_lender][_idContract].rateCollateral;
-
-    (bool responseSrc,) = _serchIndexBorrowerXContract(_idContract, _to);
-   
-        if(!responseSrc){
-            // nuovo cliente????
-            // conti nuovi
-            require(_healFactor(_priceCollateralETH, _priceBorrowEth) > userLendingContract[_lender][_idContract].rateCollateral);
-            IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
-            Borrower memory newBorrower = Borrower(
-                                                _to,
-                                                _idContract,
-                                                userLendingContract[_lender][_idContract].asset,
-                                                _amountBorrow,
-                                                //uint heltBorrow;
-                                                _assettCollateral,
-                                                _amountCollateral,
-                                                _liquidationThresold(_priceCollateralETH, _priceBorrowEth, _rateLiquidation)
-                                                );
-
-            /**
-                da fare
-                    - aggiornare i dati del lender
-                    - Verificare se si puo creare un meccanismo di controllo delle coin che arrivano
-                    - settare i dati del borrower
-                     
-            
-             */
-
-        }else{
-            // gia cliente??
-            // aggiorniamo i conti vecchi 
-
-        }
-
-    
+    function _mockOracleBorrow() internal pure returns(uint price){
+        price = 2;
     }
 
-
-    function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
-        for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
-            if(borrowersXid[_idContract][i].owner == _borrower){
-                return (true,i);
-            }
-        }
-        return (false,0);
+    function _mockOracleCollateral() internal pure returns(uint price){
+        price = 1;
     }
-
-     function _serchBorrowerPositionXContract(uint _idContract,address _borrower) internal view returns(Borrower memory){
-        for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
-            if(borrowersXid[_idContract][i].owner == _borrower){
-                return (borrowersXid[_idContract][i]);
-            }
-        }
-        revert("Borrower for this contract not present");
-    }
-
-
-
-
-
-
-
-    function _healFactor(uint _priceCollateralETH, uint _priceBorrowEth) internal pure returns(uint){
-        return (_priceCollateralETH/_priceBorrowEth);
-    }
-
-    function _liquidationThresold(uint _priceCollateralETH, uint _priceBorrowEth,uint _rateLiquidation) internal pure returns(uint){
-        return (
-            (_priceCollateralETH * _priceBorrowEth)/(_rateLiquidation * _priceBorrowEth)
-        );
-    }
-
-
-
-
-
-
 
 /**
     1 -> Valore Asset sia depositati che collateralizati
             Soluzione -> Oracolo
             Problema -> Calcolo matematico 
-    
-    2 -> Ogni tentativo di borrow deve prima verificare se esiste margine per farlo -> ok
 
     3 -> Ripagare il Borrow e cambiare il margine
             -> Applicare qui la Fee ? 
@@ -438,43 +455,9 @@ function _executeBorrow(address _to,uint _idContract,address _lender,uint _amoun
                     -> detenere gli asset? 
                     -> miso detenere blue chips e dumpare il resto.ò
  
- 
- 
-   function calculateHealthFactorFromBalances(
-    uint256 totalCollateralInETH,
-    uint256 totalDebtInETH,
-    uint256 liquidationThreshold
-  ) internal pure returns (uint256) {
-    if (totalDebtInETH == 0) return uint256(-1);
-
-    return (totalCollateralInETH.percentMul(liquidationThreshold)).wadDiv(totalDebtInETH);
-  }
- 
- 
- 
- 
- 
  */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
 /**
  nonReentrant()
  onlyOwner()
