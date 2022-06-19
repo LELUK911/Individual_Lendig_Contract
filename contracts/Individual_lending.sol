@@ -25,7 +25,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         uint deadline;
         uint penality;
         address collateral;
-        uint _amountBorrow;
+        uint amountBorrow;
         uint rateCollateral;
         uint amountCollateral;
     }
@@ -192,6 +192,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         require(
             _findContractLending(_to,_idContract).amountAvvalible >= _decreasAmount, "Assett avvalible insufficient for this whidrow"
         );
+     
 
         userLendingContract[_to][_idContract].amountAvvalible -= _decreasAmount;
 
@@ -209,7 +210,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
     }
     function _deleteContract(address _to,uint _idContract)internal contractOwner(_to, _idContract){
        require(
-            _findContractLending(_to,_idContract)._amountBorrow == 0, "Contract have asset in borrow"
+            _findContractLending(_to,_idContract).amountBorrow == 0, "Contract have asset in borrow"
         ); 
         uint amountRepay = userLendingContract[_to][_idContract].amountAvvalible;
         uint deleteId = userLendingContract[_to][_idContract].id;
@@ -292,6 +293,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
                          _rateLiquidation);
 
             userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
+            userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
             userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
 
             IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
@@ -325,7 +327,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         // aggiorniamo i dati del lender
 
         userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
-
+        userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
         userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
 
         IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);

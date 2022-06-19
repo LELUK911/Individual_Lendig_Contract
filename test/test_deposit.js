@@ -5,7 +5,7 @@ const LendingPage = artifacts.require('lendingPage');
 
 const truffleAssert = require("truffle-assertions");
 
-skip.contract("LendingContract", accounts =>{
+contract("LendingContract", accounts =>{
     const account = accounts[0];
     const account2 = accounts[1];
     
