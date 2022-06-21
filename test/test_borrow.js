@@ -184,5 +184,26 @@ contract("LendingContract Borrow Function", accounts =>{
       ) 
         
     })
+    it("Lock contract + chek (no Borrow)", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      const weth = await mockWeth.deployed();
+      let result  =await lendingP.findContractLending(account,2)
+      //console.log("before " + result)
+
+      await lendingP.lockNewBorrow(account,1,true)   
+       
+      result  = await lendingP.findContractLending(account,2)
+      //console.log("after" + result)       
+
+      await truffleAssert.reverts(
+         lendingP.executeBorrow(
+          1, //so gia l'id del contratto
+          account,
+          1454,
+          weth.address,
+          10000,{from:account2}
+          )
+      )
+    })
 
 })

@@ -7,8 +7,10 @@ import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+
 contract lendingPage is Ownable,ReentrancyGuard {
     //library
+
     using Counters for Counters.Counter;
     //function variable
     Counters.Counter private Id; // id every lending contract
@@ -18,11 +20,12 @@ contract lendingPage is Ownable,ReentrancyGuard {
     struct LendingContract {
         uint id;
         address owner;
+        bool lock;
         address asset;
         //uint amount;
         uint amountAvvalible;
         uint apr;
-        uint deadline;
+        uint duration;
         uint penality;
         address collateral;
         uint amountBorrow;
@@ -33,6 +36,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
     mapping(address => uint[])listContractUser;
     uint[] private listContract;
     // borrower
+
     struct Borrower{
         address owner;
         uint idContract;
@@ -42,6 +46,8 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address assetCollaterl;
         uint amountCollateral;
         uint liquidationThreshold;
+        uint expiration;
+        uint blockStart;
     }
     mapping(uint => Borrower[]) private borrowersXid; 
 
@@ -148,6 +154,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         LendingContract memory newContract= LendingContract(
             Id.current(),
             _to,
+            false,
             _asset,
             //_amount,
             _amount,
@@ -244,8 +251,15 @@ contract lendingPage is Ownable,ReentrancyGuard {
 
         emit DeleteContractDeposit(_to, deleteId);
     }
+    function _lockNewBorrow(address _to,uint _idContract,bool _lock)internal contractOwner(_to, _idContract){
+             lock[_idContract] = _lock;
+            //userLendingContract[_to][_idContract].lock = _lock;   
+       
+    }
     //BORROW FUNCTION
     function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
+        require(lock[_idContract] == false, "questo funziona");
+        require(userLendingContract[_to][_idContract].lock == false,"This lender has blocked the issuance of new Loan");
         (,bool response) = _findArrayindexContract(_lender,_idContract);
         require(response,"contract dont exist");
         require(userLendingContract[_lender][_idContract].amountAvvalible >= _amountBorrow,"Amount avvalible low");
@@ -320,7 +334,9 @@ contract lendingPage is Ownable,ReentrancyGuard {
                                             _liquidationThresold(
                                                 //_mockOracleCollateral()*_amountCollateral,
                                                  _mockOracleBorrow()*_amountBorrow,
-                                                 _rateLiquidation)
+                                                 _rateLiquidation),
+                                            block.timestamp + userLendingContract[_lender][_idContract].duration,
+                                            block.timestamp
                                             );
 
         borrowersXid[_idContract].push(newBorrower);// aggiornata la variabile locale
@@ -361,9 +377,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
     function deleteContract(uint _idContract) external nonReentrant(){
         _deleteContract(msg.sender, _idContract);
     }
-    //// ^^^^^TESTED^^^^^
-    /// vvvvvvNON TESTEDvvvvv
-    function executeBorrow(uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) external nonReentrant(){
+     function executeBorrow(uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) external nonReentrant(){
         _executeBorrow(msg.sender, _idContract, _lender, _amountBorrow, _assettCollateral, _amountCollateral);
     }
     function serchBorrowerPositionXContract(uint _idContract,address _borrower) external view returns (Borrower memory){
@@ -374,8 +388,15 @@ contract lendingPage is Ownable,ReentrancyGuard {
         (,uint idFind) = _serchIndexBorrowerXContract(_idContract, _borrower);
         return idFind;
     }
+    mapping ( uint => bool) private lock;
+    function lockNewBorrow(address _to,uint _idContract,bool _lock)external nonReentrant(){
+       
+        _lockNewBorrow(_to, _idContract,_lock);
+    }
 
-
+    //// ^^^^^TESTED^^^^^
+    /// vvvvvvNON TESTEDvvvvv
+   
     // MODIFIER
     modifier contractOwner(address _to,uint _idContract){
         require(
@@ -421,13 +442,37 @@ contract lendingPage is Ownable,ReentrancyGuard {
 
     function _mockOracleCollateral() internal pure returns(uint price){
         price = 1;
+
     }
 
-/**
-    1 -> Valore Asset sia depositati che collateralizati
-            Soluzione -> Oracolo
-            Problema -> Calcolo matematico 
 
+    //wiew amount of repay 
+    function viewAmountLoan(address  _borrower,uint _idContract) external view returns(uint loanCompouse) {
+        Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _borrower);
+        uint apr = _findContractLending(loanSituation.owner,loanSituation.idContract).apr;
+        uint blockStart = loanSituation.blockStart; 
+        loanCompouse= _getTotalLoan(loanSituation.ammounBorrow,apr,blockStart); 
+        }
+
+
+
+    function _getTotalLoan(uint _loan,uint _apr,uint _blockStart) internal  view returns(uint) {
+    uint deltaTime = block.timestamp - _blockStart;
+    uint loanCompouse = _loan + uint((_loan*_apr*deltaTime) / (100*365*24*60*60)) + 1;
+    //uint interestLoan = loanCompouse - _loan;
+    return loanCompouse;
+    }
+
+    function _getinterest(uint _loan,uint _apr,uint _blockStart) internal  view returns(uint interestLoan) {
+        interestLoan = _getTotalLoan(_loan, _apr, _blockStart) - _loan;
+    }
+
+
+
+
+
+
+/**
     3 -> Ripagare il Borrow e cambiare il margine
             -> Applicare qui la Fee ? 
 
@@ -457,10 +502,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
                     -> detenere gli asset? 
                     -> miso detenere blue chips e dumpare il resto.ò
  
- */
 
-}
-/**
  nonReentrant()
  onlyOwner()
  
@@ -468,3 +510,4 @@ contract lendingPage is Ownable,ReentrancyGuard {
 
  
  */
+}

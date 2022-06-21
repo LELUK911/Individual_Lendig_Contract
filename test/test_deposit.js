@@ -74,8 +74,6 @@ contract("LendingContract", accounts =>{
       //result  = await lendingP.findContractLending(account,1)
       //console.log("after " + result)   
     })
-
-
     it("Decrease deposit + chek (no Borrow)", async ()=>{
       const lendingP = await LendingPage.deployed();
       const weth = await mockWeth.deployed();
@@ -94,16 +92,17 @@ contract("LendingContract", accounts =>{
       //result  = await lendingP.findContractLending(account,2)
       //console.log("after" + result)       
     })
+    it("Lock contract + chek (no Borrow)", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      const weth = await mockWeth.deployed();
+      let result  =await lendingP.findContractLending(account,2)
+      console.log("before " + result)
 
+      await lendingP.lockNewBorrow(account,1,true)   
 
-
-
-
-
-
-
-
-
+      result  = await lendingP.findContractLending(account,2)
+      console.log("after" + result)       
+    })
 
     // SERCH FUNCTION 
     it("Question function ->find Asset <-", async ()=>{
@@ -133,14 +132,9 @@ contract("LendingContract", accounts =>{
           //console.log(result) CHECK
         }
     })
-
-
-
     it("Delete deposit (no borrow)", async ()=>{
       const lendingP = await LendingPage.deployed();
       const weth = await mockWeth.deployed();
-
-  
       //let balance  = await weth.balanceOf(lendingP.address);
       //console.log("balance before" + String(balance))
       //let result  =await lendingP.findContractLending(account,2)
@@ -152,15 +146,7 @@ contract("LendingContract", accounts =>{
       //result  = await lendingP.findContractLending(account,2)
       //console.log("after" + result)       
     })
-    
-
-
-
-
-
-
-
-
+  
 
     // CHECK check autorization
 
