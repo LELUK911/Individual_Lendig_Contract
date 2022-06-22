@@ -52,7 +52,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         address lender;
     }
     mapping(uint => Borrower[]) private borrowersXid;
-    mapping(address => mapping(uint=>Borrower)) private BorrowerContract;
+    //mapping(address => mapping(uint=>Borrower)) private BorrowerContract;
 
 
     //-------------------------------//
@@ -260,6 +260,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
             //userLendingContract[_to][_idContract].lock = _lock;   
        
     }
+  
     //BORROW FUNCTION
     function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
         require(lock[_idContract] == false, "questo funziona");
@@ -314,7 +315,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
             userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
             userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
             userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
-            BorrowerContract[_to][indexBorrow] = borrowersXid[_idContract][indexBorrow];
+            //BorrowerContract[_to][indexBorrow] = borrowersXid[_idContract][indexBorrow];
             IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
 
     }
@@ -353,7 +354,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
         userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
         userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
-        BorrowerContract[_to][borrowersXid[_idContract].length] = newBorrower;
+        //BorrowerContract[_to][borrowersXid[_idContract].length] = newBorrower;
         IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
     }
     
@@ -475,22 +476,20 @@ contract lendingPage is Ownable,ReentrancyGuard {
     function _getinterest(uint _loan,uint _apr,uint _blockStart) internal  view returns(uint interestLoan) {
         interestLoan = _getTotalLoan(_loan, _apr, _blockStart) - _loan;
     }
-    function _penalityLoan() internal {
-        // da fare 
-    }
+  
 
-    function _repay(address _to, uint _idContract,uint _amount) internal {
+    function _executeRepay(address _to, uint _idContract,uint _amount) internal {
         Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _to);
         require(_to  == loanSituation.owner ,"Not owner this loan");
 
         if(block.timestamp > loanSituation.expiration){
-            _penalityLoan();// gestire la penalità
+            require(_penalityLoan(loanSituation, _amount, _to, _idContract));// gestire la penalità
         }else{
-            require(_executeRepay(loanSituation, _amount, _to, _idContract),"Repay error");
+            require(_repay(loanSituation, _amount, _to, _idContract),"Repay error");
         }
     }
 
-    function _executeRepay(Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
+    function _repay(Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
         // portiamo ad adesso la situazione
             loanSituation.ammounBorrow = _getTotalLoan(
                 loanSituation.ammounBorrow,loanSituation.aprLoan,loanSituation.blockStart);
@@ -499,7 +498,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
 
             uint Balance = IERC20(loanSituation.assetBorrow).balanceOf(address(this));
             IERC20(loanSituation.assetBorrow).transferFrom(_to,address(this), _amount);
-            assert(Balance == IERC20(loanSituation.assetBorrow).balanceOf(address(this))+_amount);
+            assert(Balance + _amount == IERC20(loanSituation.assetBorrow).balanceOf(address(this)));
 
             // receipt the "ternis" update the data lender and borrower
             address _lender = loanSituation.lender;
@@ -517,8 +516,75 @@ contract lendingPage is Ownable,ReentrancyGuard {
                       userLendingContract[_lender][_idContract].rateCollateral);
             return true;
     }
+      function _penalityLoan (Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
+        require(loanSituation.expiration < block.timestamp, "This loan not expired");
+        //penality 2% of pay
+        uint new_amount = (_amount *88)/100;
+        // per ora va tutto al lendere ma poi ci applichiamo delle fee
+        userLendingContract[loanSituation.lender][_idContract].amountAvvalible += _amount - new_amount;// tutto /2
+        // balanceContract[assett] += (_amount - new_amount)/2
+        require(_repay(loanSituation, new_amount, _to, _idContract));
+        return true;
+    }
+    
+
+    function _increaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
+            userLendingContract[_to][_idContract].duration += _timeIncreas;     
+    }
+    function _decreaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
+            require(userLendingContract[_to][_idContract].amountBorrow == 0);
+            userLendingContract[_to][_idContract].duration += _timeIncreas;     
+    }
 
 
+    function _liquidationCall(address _to,uint _idContract,uint _idBorrow) internal contractOwner(_to, _idContract) {
+        require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= _mockOracleCollateral(),"thresold Liquidation price not achieved");
+        // 1/4 viene lioquidato
+        uint liquidationAmount = borrowersXid[_idContract][_idBorrow].amountCollateral /4; // parte da liquidare
+        // tolgo dalla posizione del borrower il collaterale liquidato (quidni non puo prelevare)
+        borrowersXid[_idContract][_idBorrow].amountCollateral -= liquidationAmount;
+        // dallo status contratto tolgo il collaterale perche diventa prelevabile
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
+        // riduco il credito del lender
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= liquidationAmount * _mockOracleCollateral();
+        // riduco il debito del borrower
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -= liquidationAmount * _mockOracleCollateral();
+        // aggiorniamo il ThresoldLiquidation
+        borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
+             _mockOracleBorrow() * borrowersXid[_idContract][_idBorrow].ammounBorrow,
+             userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral
+             );
+        // rendo prelevabile il collaterale
+        liquidationContract[borrowersXid[_idContract][_idBorrow].owner][borrowersXid[_idContract][_idBorrow].assetCollaterl] += liquidationAmount;
+
+     
+    }
+
+    mapping (address=> mapping(address=> uint)) liquidationContract;
+
+
+
+
+
+
+
+
+    function executeRepay(uint _idContract,uint _amount) external nonReentrant(){
+        _executeRepay(msg.sender, _idContract, _amount);
+    }
+
+
+
+
+
+
+
+    function increaseTimeExpire(uint _idContract, uint _timeIncreas)external nonReentrant(){
+          _increaseTimeExpire(msg.sender, _idContract, _timeIncreas);
+    }
+    function decreaseTimeExpire(uint _idContract, uint _timeIncreas)external nonReentrant(){
+          _decreaseTimeExpire(msg.sender, _idContract, _timeIncreas);
+    }
 
 /**
     3 -> Ripagare il Borrow e cambiare il margine
