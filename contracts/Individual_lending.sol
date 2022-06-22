@@ -48,8 +48,12 @@ contract lendingPage is Ownable,ReentrancyGuard {
         uint liquidationThreshold;
         uint expiration;
         uint blockStart;
+        uint aprLoan;
+        address lender;
     }
-    mapping(uint => Borrower[]) private borrowersXid; 
+    mapping(uint => Borrower[]) private borrowersXid;
+    mapping(address => mapping(uint=>Borrower)) private BorrowerContract;
+
 
     //-------------------------------//
     constructor(uint _minpenality) Ownable() ReentrancyGuard(){
@@ -289,6 +293,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         // gia cliente??
         // aggiorniamo i conti vecchi 
         // aggiungere al controllo le coin gia depositate e prese in prestito 
+        require(_to == borrowersXid[_idContract][indexBorrow].owner, "Not owner this loan" );
         require(_healFactor(_mockOracleCollateral() *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
                              _mockOracleBorrow() *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
                              )> userLendingContract[_lender][_idContract].rateCollateral); 
@@ -309,7 +314,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
             userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
             userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
             userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
-
+            BorrowerContract[_to][indexBorrow] = borrowersXid[_idContract][indexBorrow];
             IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
 
     }
@@ -336,7 +341,10 @@ contract lendingPage is Ownable,ReentrancyGuard {
                                                  _mockOracleBorrow()*_amountBorrow,
                                                  _rateLiquidation),
                                             block.timestamp + userLendingContract[_lender][_idContract].duration,
-                                            block.timestamp
+                                            block.timestamp,
+                                            _findContractLending(_lender,_idContract).apr,
+                                            _lender
+
                                             );
 
         borrowersXid[_idContract].push(newBorrower);// aggiornata la variabile locale
@@ -345,7 +353,7 @@ contract lendingPage is Ownable,ReentrancyGuard {
         userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
         userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
         userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
-
+        BorrowerContract[_to][borrowersXid[_idContract].length] = newBorrower;
         IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
     }
     
@@ -449,13 +457,13 @@ contract lendingPage is Ownable,ReentrancyGuard {
     //wiew amount of repay 
     function viewAmountLoan(address  _borrower,uint _idContract) external view returns(uint loanCompouse) {
         Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _borrower);
-        uint apr = _findContractLending(loanSituation.owner,loanSituation.idContract).apr;
+        uint apr = loanSituation.aprLoan;
         uint blockStart = loanSituation.blockStart; 
         loanCompouse= _getTotalLoan(loanSituation.ammounBorrow,apr,blockStart); 
         }
 
 
-
+    // return loan + interest
     function _getTotalLoan(uint _loan,uint _apr,uint _blockStart) internal  view returns(uint) {
     uint deltaTime = block.timestamp - _blockStart;
     uint loanCompouse = _loan + uint((_loan*_apr*deltaTime) / (100*365*24*60*60)) + 1;
@@ -463,12 +471,52 @@ contract lendingPage is Ownable,ReentrancyGuard {
     return loanCompouse;
     }
 
+    // return only interest
     function _getinterest(uint _loan,uint _apr,uint _blockStart) internal  view returns(uint interestLoan) {
         interestLoan = _getTotalLoan(_loan, _apr, _blockStart) - _loan;
     }
+    function _penalityLoan() internal {
+        // da fare 
+    }
+
+    function _repay(address _to, uint _idContract,uint _amount) internal {
+        Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _to);
+        require(_to  == loanSituation.owner ,"Not owner this loan");
+
+        if(block.timestamp > loanSituation.expiration){
+            _penalityLoan();// gestire la penalità
+        }else{
+            require(_executeRepay(loanSituation, _amount, _to, _idContract),"Repay error");
+        }
+    }
+
+    function _executeRepay(Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
+        // portiamo ad adesso la situazione
+            loanSituation.ammounBorrow = _getTotalLoan(
+                loanSituation.ammounBorrow,loanSituation.aprLoan,loanSituation.blockStart);
+            // ripagando si ricomincia il calcolo degli interessi come fosse un prestito nuovo
+            require(loanSituation.ammounBorrow >= _amount, "You can only Loan amount");
+
+            uint Balance = IERC20(loanSituation.assetBorrow).balanceOf(address(this));
+            IERC20(loanSituation.assetBorrow).transferFrom(_to,address(this), _amount);
+            assert(Balance == IERC20(loanSituation.assetBorrow).balanceOf(address(this))+_amount);
+
+            // receipt the "ternis" update the data lender and borrower
+            address _lender = loanSituation.lender;
+            userLendingContract[_lender][_idContract].amountBorrow -= _amount;
+            userLendingContract[_lender][_idContract].amountAvvalible += _amount;
+
+            (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
 
 
-
+            borrowersXid[_idContract][indexBorrow].ammounBorrow -= _amount;
+            borrowersXid[_idContract][indexBorrow].blockStart = block.timestamp;
+            borrowersXid[_idContract][indexBorrow].liquidationThreshold = 
+                _liquidationThresold(
+                      borrowersXid[_idContract][indexBorrow].ammounBorrow * _mockOracleBorrow(),
+                      userLendingContract[_lender][_idContract].rateCollateral);
+            return true;
+    }
 
 
 
