@@ -1,0 +1,1061 @@
+{
+  "contractName": "Storage",
+  "abi": [],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/storage.sol\":\"Storage\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/storage.sol\":{\"keccak256\":\"0xcf3fe93b231baf01982d4d415ffc6899d8871abb726ebacf6636b8c9a3d0681f\",\"license\":\"Leluk911\",\"urls\":[\"bzz-raw://82ce84a4c186413603e7da53f632aafec3f64d9ddcb17878d8b1da989139ce76\",\"dweb:/ipfs/QmVJuXhQQiiRvjcxf5Qd1qiXhwH2nsf2SH77tfktJecKqr\"]}},\"version\":1}",
+  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220f855a7963dae83df12b8caaadafde27f3dc78920ef6779ff6090b966f62315f164736f6c63430008070033",
+  "deployedBytecode": "0x6080604052600080fdfea2646970667358221220f855a7963dae83df12b8caaadafde27f3dc78920ef6779ff6090b966f62315f164736f6c63430008070033",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "63:1244:5:-:0;;;;;;;;;;;;;;;;;;;",
+  "deployedSourceMap": "63:1244:5:-:0;;;;;",
+  "source": "// SPDX-License-Identifier: Leluk911\n\npragma solidity 0.8.7;\n\n\ncontract Storage {\n    address[] internal assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)\n    uint internal minPenality;\n    // User\n    struct LendingContract {\n        uint id;\n        address owner;\n        bool lock;\n        address asset;\n        //uint amount;\n        uint amountAvvalible;\n        uint apr;\n        uint duration;\n        uint penality;\n        address collateral;\n        uint amountBorrow;\n        uint rateCollateral;\n        uint amountCollateral;\n    }\n    mapping(address => mapping(uint=>LendingContract)) internal userLendingContract;\n    mapping(address => uint[])listContractUser;\n    uint[] internal listContract;\n    mapping ( uint => bool) internal lock;\n\n    // borrower\n\n    struct Borrower{\n        address owner;\n        uint idContract;\n        address assetBorrow;\n        uint ammounBorrow; // da correggere\n        //uint heltBorrow;\n        address assetCollaterl;\n        uint amountCollateral;\n        uint liquidationThreshold;\n        uint expiration;\n        uint blockStart;\n        uint aprLoan;\n        address lender;\n    }\n    mapping(uint => Borrower[]) internal borrowersXid;\n    //mapping(address => mapping(uint=>Borrower)) private BorrowerContract;\n}",
+  "sourcePath": "/media/leluk/storage/Studio Dev/Dapp portfolio/individual lending/contracts/storage.sol",
+  "ast": {
+    "absolutePath": "project:/contracts/storage.sol",
+    "exportedSymbols": {
+      "Storage": [
+        2413
+      ]
+    },
+    "id": 2414,
+    "license": "Leluk911",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2334,
+        "literals": [
+          "solidity",
+          "0.8",
+          ".7"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "38:22:5"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 2413,
+        "linearizedBaseContracts": [
+          2413
+        ],
+        "name": "Storage",
+        "nameLocation": "72:7:5",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 2337,
+            "mutability": "mutable",
+            "name": "assetAvvalible",
+            "nameLocation": "105:14:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "86:33:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_array$_t_address_$dyn_storage",
+              "typeString": "address[]"
+            },
+            "typeName": {
+              "baseType": {
+                "id": 2335,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "86:7:5",
+                "stateMutability": "nonpayable",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "id": 2336,
+              "nodeType": "ArrayTypeName",
+              "src": "86:9:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                "typeString": "address[]"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2339,
+            "mutability": "mutable",
+            "name": "minPenality",
+            "nameLocation": "204:11:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "190:25:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 2338,
+              "name": "uint",
+              "nodeType": "ElementaryTypeName",
+              "src": "190:4:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "canonicalName": "Storage.LendingContract",
+            "id": 2364,
+            "members": [
+              {
+                "constant": false,
+                "id": 2341,
+                "mutability": "mutable",
+                "name": "id",
+                "nameLocation": "271:2:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "266:7:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2340,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "266:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2343,
+                "mutability": "mutable",
+                "name": "owner",
+                "nameLocation": "291:5:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "283:13:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2342,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "283:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2345,
+                "mutability": "mutable",
+                "name": "lock",
+                "nameLocation": "311:4:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "306:9:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 2344,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "306:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2347,
+                "mutability": "mutable",
+                "name": "asset",
+                "nameLocation": "333:5:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "325:13:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2346,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "325:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2349,
+                "mutability": "mutable",
+                "name": "amountAvvalible",
+                "nameLocation": "376:15:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "371:20:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2348,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "371:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2351,
+                "mutability": "mutable",
+                "name": "apr",
+                "nameLocation": "406:3:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "401:8:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2350,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "401:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2353,
+                "mutability": "mutable",
+                "name": "duration",
+                "nameLocation": "424:8:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "419:13:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2352,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "419:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2355,
+                "mutability": "mutable",
+                "name": "penality",
+                "nameLocation": "447:8:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "442:13:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2354,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "442:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2357,
+                "mutability": "mutable",
+                "name": "collateral",
+                "nameLocation": "473:10:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "465:18:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2356,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "465:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2359,
+                "mutability": "mutable",
+                "name": "amountBorrow",
+                "nameLocation": "498:12:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "493:17:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2358,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "493:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2361,
+                "mutability": "mutable",
+                "name": "rateCollateral",
+                "nameLocation": "525:14:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "520:19:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2360,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "520:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2363,
+                "mutability": "mutable",
+                "name": "amountCollateral",
+                "nameLocation": "554:16:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2364,
+                "src": "549:21:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2362,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "549:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "LendingContract",
+            "nameLocation": "240:15:5",
+            "nodeType": "StructDefinition",
+            "scope": 2413,
+            "src": "233:344:5",
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 2371,
+            "mutability": "mutable",
+            "name": "userLendingContract",
+            "nameLocation": "642:19:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "582:79:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_uint256_$_t_struct$_LendingContract_$2364_storage_$_$",
+              "typeString": "mapping(address => mapping(uint256 => struct Storage.LendingContract))"
+            },
+            "typeName": {
+              "id": 2370,
+              "keyType": {
+                "id": 2365,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "590:7:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "582:50:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_uint256_$_t_struct$_LendingContract_$2364_storage_$_$",
+                "typeString": "mapping(address => mapping(uint256 => struct Storage.LendingContract))"
+              },
+              "valueType": {
+                "id": 2369,
+                "keyType": {
+                  "id": 2366,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "609:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "nodeType": "Mapping",
+                "src": "601:30:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_mapping$_t_uint256_$_t_struct$_LendingContract_$2364_storage_$",
+                  "typeString": "mapping(uint256 => struct Storage.LendingContract)"
+                },
+                "valueType": {
+                  "id": 2368,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 2367,
+                    "name": "LendingContract",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2364,
+                    "src": "615:15:5"
+                  },
+                  "referencedDeclaration": 2364,
+                  "src": "615:15:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_LendingContract_$2364_storage_ptr",
+                    "typeString": "struct Storage.LendingContract"
+                  }
+                }
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2376,
+            "mutability": "mutable",
+            "name": "listContractUser",
+            "nameLocation": "693:16:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "667:42:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_array$_t_uint256_$dyn_storage_$",
+              "typeString": "mapping(address => uint256[])"
+            },
+            "typeName": {
+              "id": 2375,
+              "keyType": {
+                "id": 2372,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "675:7:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "667:26:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_array$_t_uint256_$dyn_storage_$",
+                "typeString": "mapping(address => uint256[])"
+              },
+              "valueType": {
+                "baseType": {
+                  "id": 2373,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "686:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "id": 2374,
+                "nodeType": "ArrayTypeName",
+                "src": "686:6:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                  "typeString": "uint256[]"
+                }
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2379,
+            "mutability": "mutable",
+            "name": "listContract",
+            "nameLocation": "731:12:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "715:28:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_array$_t_uint256_$dyn_storage",
+              "typeString": "uint256[]"
+            },
+            "typeName": {
+              "baseType": {
+                "id": 2377,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "715:4:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              },
+              "id": 2378,
+              "nodeType": "ArrayTypeName",
+              "src": "715:6:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                "typeString": "uint256[]"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2383,
+            "mutability": "mutable",
+            "name": "lock",
+            "nameLocation": "782:4:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "749:37:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint256_$_t_bool_$",
+              "typeString": "mapping(uint256 => bool)"
+            },
+            "typeName": {
+              "id": 2382,
+              "keyType": {
+                "id": 2380,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "759:4:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "749:23:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint256_$_t_bool_$",
+                "typeString": "mapping(uint256 => bool)"
+              },
+              "valueType": {
+                "id": 2381,
+                "name": "bool",
+                "nodeType": "ElementaryTypeName",
+                "src": "767:4:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                }
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "canonicalName": "Storage.Borrower",
+            "id": 2406,
+            "members": [
+              {
+                "constant": false,
+                "id": 2385,
+                "mutability": "mutable",
+                "name": "owner",
+                "nameLocation": "843:5:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "835:13:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2384,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "835:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2387,
+                "mutability": "mutable",
+                "name": "idContract",
+                "nameLocation": "863:10:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "858:15:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2386,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "858:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2389,
+                "mutability": "mutable",
+                "name": "assetBorrow",
+                "nameLocation": "891:11:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "883:19:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2388,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "883:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2391,
+                "mutability": "mutable",
+                "name": "ammounBorrow",
+                "nameLocation": "917:12:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "912:17:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2390,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "912:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2393,
+                "mutability": "mutable",
+                "name": "assetCollaterl",
+                "nameLocation": "991:14:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "983:22:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2392,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "983:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2395,
+                "mutability": "mutable",
+                "name": "amountCollateral",
+                "nameLocation": "1020:16:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1015:21:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2394,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1015:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2397,
+                "mutability": "mutable",
+                "name": "liquidationThreshold",
+                "nameLocation": "1051:20:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1046:25:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2396,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1046:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2399,
+                "mutability": "mutable",
+                "name": "expiration",
+                "nameLocation": "1086:10:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1081:15:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2398,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1081:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2401,
+                "mutability": "mutable",
+                "name": "blockStart",
+                "nameLocation": "1111:10:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1106:15:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2400,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1106:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2403,
+                "mutability": "mutable",
+                "name": "aprLoan",
+                "nameLocation": "1136:7:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1131:12:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 2402,
+                  "name": "uint",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1131:4:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 2405,
+                "mutability": "mutable",
+                "name": "lender",
+                "nameLocation": "1161:6:5",
+                "nodeType": "VariableDeclaration",
+                "scope": 2406,
+                "src": "1153:14:5",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 2404,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1153:7:5",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "Borrower",
+            "nameLocation": "817:8:5",
+            "nodeType": "StructDefinition",
+            "scope": 2413,
+            "src": "810:364:5",
+            "visibility": "public"
+          },
+          {
+            "constant": false,
+            "id": 2412,
+            "mutability": "mutable",
+            "name": "borrowersXid",
+            "nameLocation": "1216:12:5",
+            "nodeType": "VariableDeclaration",
+            "scope": 2413,
+            "src": "1179:49:5",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_uint256_$_t_array$_t_struct$_Borrower_$2406_storage_$dyn_storage_$",
+              "typeString": "mapping(uint256 => struct Storage.Borrower[])"
+            },
+            "typeName": {
+              "id": 2411,
+              "keyType": {
+                "id": 2407,
+                "name": "uint",
+                "nodeType": "ElementaryTypeName",
+                "src": "1187:4:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "1179:27:5",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_uint256_$_t_array$_t_struct$_Borrower_$2406_storage_$dyn_storage_$",
+                "typeString": "mapping(uint256 => struct Storage.Borrower[])"
+              },
+              "valueType": {
+                "baseType": {
+                  "id": 2409,
+                  "nodeType": "UserDefinedTypeName",
+                  "pathNode": {
+                    "id": 2408,
+                    "name": "Borrower",
+                    "nodeType": "IdentifierPath",
+                    "referencedDeclaration": 2406,
+                    "src": "1195:8:5"
+                  },
+                  "referencedDeclaration": 2406,
+                  "src": "1195:8:5",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Borrower_$2406_storage_ptr",
+                    "typeString": "struct Storage.Borrower"
+                  }
+                },
+                "id": 2410,
+                "nodeType": "ArrayTypeName",
+                "src": "1195:10:5",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_array$_t_struct$_Borrower_$2406_storage_$dyn_storage_ptr",
+                  "typeString": "struct Storage.Borrower[]"
+                }
+              }
+            },
+            "visibility": "internal"
+          }
+        ],
+        "scope": 2414,
+        "src": "63:1244:5",
+        "usedErrors": []
+      }
+    ],
+    "src": "38:1269:5"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.7+commit.e28d00a7.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.4.7",
+  "updatedAt": "2022-06-23T05:00:55.666Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}
