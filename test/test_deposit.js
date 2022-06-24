@@ -95,13 +95,33 @@ contract("LendingContract", accounts =>{
     it("Lock contract + chek (no Borrow)", async ()=>{
       const lendingP = await LendingPage.deployed();
       const weth = await mockWeth.deployed();
-      let result  =await lendingP.findContractLending(account,2)
-      console.log("before " + result)
+      let result  =await lendingP.findContractLending(account,1)
+      //console.log("before " + result)
 
       await lendingP.lockNewBorrow(account,1,true)   
 
-      result  = await lendingP.findContractLending(account,2)
-      console.log("after" + result)       
+      result  = await lendingP.findContractLending(account,1)
+      //console.log("after" + result)       
+    })
+    it("Incread time expire + chek (no Borrow)", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      let result  =await lendingP.findContractLending(account,1)
+      //console.log("before " + result)
+
+      await lendingP.increaseTimeExpire(1,999)   
+
+      result  = await lendingP.findContractLending(account,1)
+      //console.log("after" + result)       
+    })
+    it("Decread time expire + chek (no Borrow)", async ()=>{
+      const lendingP = await LendingPage.deployed();
+      let result  =await lendingP.findContractLending(account,1)
+      //console.log("before " + result)
+
+      await lendingP.decreaseTimeExpire(1,999)   
+
+      result  = await lendingP.findContractLending(account,1)
+      //console.log("after" + result)       
     })
 
     // SERCH FUNCTION 
@@ -146,6 +166,7 @@ contract("LendingContract", accounts =>{
       //result  = await lendingP.findContractLending(account,2)
       //console.log("after" + result)       
     })
+
   
 
     // CHECK check autorization

@@ -124,7 +124,7 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
         LendingContract memory newContract= LendingContract(
             Id.current(),
             _to,
-            //false,
+            false,
             _asset,
             //_amount,
             _amount,
@@ -222,15 +222,15 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
         emit DeleteContractDeposit(_to, deleteId);
     }
     function _lockNewBorrow(address _to,uint _idContract,bool _lock)internal contractOwner(_to, _idContract){
-             lock[_idContract] = _lock;
-            //userLendingContract[_to][_idContract].lock = _lock;   
+             //lock[_idContract] = _lock;
+            userLendingContract[_to][_idContract].lock = _lock;   
        
     }
   
     //BORROW FUNCTION
     function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
-        require(lock[_idContract] == false, "questo funziona");
-        //require(userLendingContract[_to][_idContract].lock == false,"This lender has blocked the issuance of new Loan");
+        //require(lock[_idContract] == false, "questo funziona");
+        require(userLendingContract[_lender][_idContract].lock == false,"This lender has blocked the issuance of new Loan");
         (,bool response) = _findArrayindexContract(_lender,_idContract);
         require(response,"contract dont exist");
         require(userLendingContract[_lender][_idContract].amountAvvalible >= _amountBorrow,"Amount avvalible low");
@@ -430,31 +430,33 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     function _executeRepay(address _to, uint _idContract,uint _amount) internal {
         //Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _to);
         require(_to  ==  _serchBorrowerPositionXContract(_idContract, _to).owner ,"Not owner this loan");
-
         if(block.timestamp >  _serchBorrowerPositionXContract(_idContract, _to).expiration){
-            require(_penalityLoan( _serchBorrowerPositionXContract(_idContract, _to), _amount, _to, _idContract));// gestire la penalità
+            require(_penalityLoan(_amount, _to, _idContract));// gestire la penalità
         }else{
-            require(_repay( _serchBorrowerPositionXContract(_idContract, _to), _amount, _to, _idContract),"Repay error");
+            require(_repay( _amount, _to, _idContract),"Repay error");
         }
         emit repay(_to, _idContract, _amount);
     }
-    function _repay(Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
+    function _repay(uint _amount,address _to,uint _idContract) internal returns(bool){
         // portiamo ad adesso la situazione
-            loanSituation.ammounBorrow = InterestCalculator._getTotalLoan(
-                loanSituation.ammounBorrow,loanSituation.aprLoan,loanSituation.blockStart);
+            (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
+
+            borrowersXid[_idContract][indexBorrow].ammounBorrow = InterestCalculator._getTotalLoan(
+                borrowersXid[_idContract][indexBorrow].ammounBorrow,
+                borrowersXid[_idContract][indexBorrow].aprLoan,
+                borrowersXid[_idContract][indexBorrow].blockStart);
             // ripagando si ricomincia il calcolo degli interessi come fosse un prestito nuovo
-            require(loanSituation.ammounBorrow >= _amount, "You can only Loan amount");
+            require(borrowersXid[_idContract][indexBorrow].ammounBorrow >= _amount, "You can only Loan amount");
 
             //uint Balance = IERC20(loanSituation.assetBorrow).balanceOf(address(this));
-            IERC20(loanSituation.assetBorrow).transferFrom(_to,address(this), _amount);
+            IERC20(borrowersXid[_idContract][indexBorrow].assetBorrow).transferFrom(_to,address(this), _amount);
             //assert(Balance + _amount == IERC20(loanSituation.assetBorrow).balanceOf(address(this)));
 
             // receipt the "ternis" update the data lender and borrower
-            address _lender = loanSituation.lender;
+            address _lender = borrowersXid[_idContract][indexBorrow].lender;
             userLendingContract[_lender][_idContract].amountBorrow -= _amount;
             userLendingContract[_lender][_idContract].amountAvvalible += _amount;
 
-            (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
 
 
             borrowersXid[_idContract][indexBorrow].ammounBorrow -= _amount;
@@ -465,14 +467,16 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
                       userLendingContract[_lender][_idContract].rateCollateral);
             return true;
     }
-    function _penalityLoan (Borrower memory loanSituation, uint _amount,address _to,uint _idContract) internal returns(bool){
-        require(loanSituation.expiration < block.timestamp, "This loan not expired");
+    function _penalityLoan ( uint _amount,address _to,uint _idContract) internal returns(bool){
+        (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
+            //borrowersXid[_idContract][indexBorrow]
+        require(borrowersXid[_idContract][indexBorrow].expiration < block.timestamp, "This loan not expired");
         //penality 2% of pay
-        uint new_amount = (_amount *88)/100;
+        uint new_amount = ((_amount *98)/100)+1;
         // per ora va tutto al lendere ma poi ci applichiamo delle fee
-        userLendingContract[loanSituation.lender][_idContract].amountAvvalible += _amount - new_amount;// tutto /2
+        userLendingContract[borrowersXid[_idContract][indexBorrow].lender][_idContract].amountAvvalible += _amount - new_amount;// tutto /2
         // balanceContract[assett] += (_amount - new_amount)/2
-        require(_repay(loanSituation, new_amount, _to, _idContract));
+        require(_repay(new_amount, _to, _idContract));
         emit applyPenality(_to, _idContract,new_amount);
         return true;
     }
@@ -522,8 +526,6 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     function executeRepay(uint _idContract,uint _amount) external nonReentrant(){
         _executeRepay(msg.sender, _idContract, _amount);
     }
-
-
     function increaseTimeExpire(uint _idContract, uint _timeIncreas)external nonReentrant(){
           _increaseTimeExpire(msg.sender, _idContract, _timeIncreas);
     }
@@ -531,7 +533,19 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
           _decreaseTimeExpire(msg.sender, _idContract, _timeIncreas);
     }
 
+    function liquidationCall(uint _idContract,uint _idBorrow) external nonReentrant(){
+           // borrowersXid[_idContract][0].liquidationThreshold = 3421;
+        _liquidationCall(msg.sender,_idContract,_idBorrow);
+    }
 
+    // TEst Function only
+    //function testTimeZero(address _to,uint _idContract)external {
+    //       
+    //        //serLendingContract[_to][_idContract].duration = _timeIncreas;
+    //        (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
+    //        borrowersXid[_idContract][indexBorrow].expiration = 0;
+    //}
+    
 }/**
 
     MANCA IL SISTEMA DI FEES

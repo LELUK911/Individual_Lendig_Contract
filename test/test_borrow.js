@@ -187,12 +187,12 @@ contract("LendingContract Borrow Function", accounts =>{
     it("Lock contract + chek (no Borrow)", async ()=>{
       const lendingP = await LendingPage.deployed();
       const weth = await mockWeth.deployed();
-      let result  =await lendingP.findContractLending(account,2)
+      let result  =await lendingP.findContractLending(account,1)
       //console.log("before " + result)
 
       await lendingP.lockNewBorrow(account,1,true)   
        
-      result  = await lendingP.findContractLending(account,2)
+      result  = await lendingP.findContractLending(account,1)
       //console.log("after" + result)       
 
       await truffleAssert.reverts(

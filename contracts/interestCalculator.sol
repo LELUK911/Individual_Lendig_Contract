@@ -9,7 +9,12 @@ library InterestCalculator {
     uint deltaTime = block.timestamp - _blockStart;
     uint loanCompouse = _loan + uint((_loan*_apr*deltaTime) / (100*365*24*60*60)) + 1;
     //uint interestLoan = loanCompouse - _loan;
+    if(loanCompouse <= 1){
+        return 0;
+    }else{
     return loanCompouse;
+
+    }
     }
 
     // return only interest

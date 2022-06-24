@@ -6,13 +6,22 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 
 
 contract Storage {
+
+
+    //Proxy variable
+    address internal coreFunction;
+    address internal depositFunction;
+    address internal borrowFunction;
+
+
+
     address[] internal assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)
     uint internal minPenality;
     // User
     struct LendingContract {
         uint id;
         address owner;
-        //bool lock;
+        bool lock;
         address asset;
         //uint amount;
         uint amountAvvalible;
@@ -27,7 +36,7 @@ contract Storage {
     mapping(address => mapping(uint=>LendingContract)) internal userLendingContract;
     mapping(address => uint[])listContractUser;
     uint[] internal listContract;
-    mapping ( uint => bool) internal lock;
+    //mapping ( uint => bool) internal lock;
 
     // borrower
 
