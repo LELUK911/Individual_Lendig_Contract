@@ -82,14 +82,15 @@ contract("Repay Function and aftermath", accounts =>{
   })
   it("Liquidation Call (ThresoldPrice)",async()=>{
     const lendingP = await LendingPage.deployed();
-
-
-
+    
+    //await lendingP.testTimeZero(account,1)// test function only
+    
     let position = await lendingP.serchBorrowerPositionXContract(1,account2);
     console.log(position)
     result  = await lendingP.findContractLending(account,1)
     console.log("after give a loan " + result)
-    await lendingP._liquidationCall(1,0);
+    await lendingP.liquidationCall(1,0);
+    
     position = await lendingP.serchBorrowerPositionXContract(1,account2);
     console.log(position)
 

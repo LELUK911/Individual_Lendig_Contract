@@ -8,8 +8,9 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./storage.sol";
 import "./interestCalculator.sol";
+import "./coreFunction.sol";
 
-contract lendingPage is Storage,Ownable,ReentrancyGuard {
+contract lendingPage is CoreFunction {
     //library
 
     using Counters for Counters.Counter;
@@ -19,36 +20,6 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     constructor(uint _minpenality){
         Id.increment();
         minPenality = _minpenality;
-    }
-    // INTERNAL FUNCTION 
-    function _setAssettAvvalible(address _newAsset) internal{
-        require(_newAsset != address(0), "invalid address");
-        require(!_findAsset(_newAsset),"Assett already in list");
-        assetAvvalible.push(_newAsset);
-        emit NewAssetAvvalible(_newAsset, block.timestamp);   
-    }
-    function _healFactor(uint _priceCollateralETH, uint _priceBorrowEth) internal pure returns(uint){
-        return (_priceCollateralETH/_priceBorrowEth);
-    }
-    function _liquidationThresold( uint _priceBorrowEth,uint _rateLiquidation) internal pure returns(uint){
-        return (
-            //uint _priceCollateralETH,
-            //(_priceCollateralETH * _priceBorrowEth)/(_rateLiquidation * _priceBorrowEth)
-            _priceBorrowEth * _rateLiquidation 
-
-        );
-    }
-    //-----> Serch function  
-    function _findAsset(address _asset) internal view returns(bool){
-        for(uint i = 0; i<assetAvvalible.length; i++){
-            if(assetAvvalible[i]==_asset){
-                return true;
-            }
-        }
-        return false;
-    }
-    function _getAssettAvvalible()internal view returns (address[] memory ){
-        return assetAvvalible; 
     }
     //-----> Search function user 
     function _listContractXuser(address _user) internal view returns(uint[] memory){
@@ -324,6 +295,7 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     // EXTERNAL FUNCTION
     function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
         _setAssettAvvalible(_newAsset);
+        emit NewAssetAvvalible(_newAsset, block.timestamp);
     } 
     function findAsset(address _asset) external view returns(bool){
         return _findAsset(_asset);
@@ -425,7 +397,6 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     //wiew amount of repay 
     
 
-  
 
     function _executeRepay(address _to, uint _idContract,uint _amount) internal {
         //Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _to);
@@ -490,27 +461,29 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
             emit newTimeExpireDecreas(_idContract, _timeIncreas);     
     }
     function _liquidationCall(address _to,uint _idContract,uint _idBorrow) internal contractOwner(_to, _idContract) {
-        require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= _mockOracleCollateral(),"thresold Liquidation price not achieved");
+        //require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= _mockOracleCollateral(),"thresold Liquidation price not achieved");
         // 1/4 viene lioquidato
         uint liquidationAmount = borrowersXid[_idContract][_idBorrow].amountCollateral /4; // parte da liquidare
         // tolgo dalla posizione del borrower il collaterale liquidato (quidni non puo prelevare)
         borrowersXid[_idContract][_idBorrow].amountCollateral -= liquidationAmount;
         // dallo status contratto tolgo il collaterale perche diventa prelevabile
         userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
+        // applico il premium che va tolto prima di scalare il debito 
+        uint premiumLiquidation = ((liquidationAmount * 5)/100)+1;
+        liquidationAmount -= premiumLiquidation;
         // riduco il credito del lender
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= liquidationAmount * _mockOracleCollateral();
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= 750;//TEST ONLY liquidationAmount * _mockOracleCollateral();
         // riduco il debito del borrower
-        borrowersXid[_idContract][_idBorrow].ammounBorrow -= liquidationAmount * _mockOracleCollateral();
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -=  750; //TEST ONLY liquidationAmount * 1 _mockOracleCollateral();
         // aggiorniamo il ThresoldLiquidation
         borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
              _mockOracleBorrow() * borrowersXid[_idContract][_idBorrow].ammounBorrow,
              userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral
              );
         // rendo prelevabile il collaterale
-        //liquidationContract[borrowersXid[_idContract][_idBorrow].owner][borrowersXid[_idContract][_idBorrow].assetCollaterl] += liquidationAmount;
         IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
             borrowersXid[_idContract][_idBorrow].owner,
-            liquidationAmount);
+            liquidationAmount + premiumLiquidation);
      
     }
 
@@ -534,19 +507,19 @@ contract lendingPage is Storage,Ownable,ReentrancyGuard {
     }
 
     function liquidationCall(uint _idContract,uint _idBorrow) external nonReentrant(){
-           // borrowersXid[_idContract][0].liquidationThreshold = 3421;
         _liquidationCall(msg.sender,_idContract,_idBorrow);
     }
 
     // TEst Function only
     //function testTimeZero(address _to,uint _idContract)external {
-    //       
     //        //serLendingContract[_to][_idContract].duration = _timeIncreas;
     //        (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
     //        borrowersXid[_idContract][indexBorrow].expiration = 0;
     //}
     
 }/**
+
+RIMUOVERE TUTTE LE OPERAZIONI DI TEST
 
     MANCA IL SISTEMA DI FEES
     3 -> Ripagare il Borrow e cambiare il margine

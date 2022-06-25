@@ -7,14 +7,6 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 
 contract Storage {
 
-
-    //Proxy variable
-    address internal coreFunction;
-    address internal depositFunction;
-    address internal borrowFunction;
-
-
-
     address[] internal assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)
     uint internal minPenality;
     // User
