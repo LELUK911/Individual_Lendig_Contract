@@ -28,7 +28,9 @@ contract Storage {
     mapping(address => mapping(uint=>LendingContract)) internal userLendingContract;
     mapping(address => uint[])listContractUser;
     uint[] internal listContract;
-    //mapping ( uint => bool) internal lock;
+    mapping (address => mapping(address => uint)) internal userCreditExpire;
+
+
 
     // borrower
 
@@ -47,11 +49,12 @@ contract Storage {
         address lender;
     }
     mapping(uint => Borrower[]) internal borrowersXid;
-    //mapping(address => mapping(uint=>Borrower)) private BorrowerContract;
+  
 
-    //mapping (address=> mapping(address=> uint)) internal liquidationContract;
+  // contract var
 
     Counters.Counter internal Id; // id every lending contract
 
+    mapping(address => uint) internal balanceFee;
 
 }

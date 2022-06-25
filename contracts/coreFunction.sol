@@ -48,4 +48,13 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
         return assetAvvalible; 
     }
 
+    event widrowFeeEvent(address indexed asset,uint amount);
+    
+    function _widrowFeeContract(address _asset)internal onlyOwner(){
+      uint widrow = balanceFee[_asset];
+      balanceFee[_asset] = 0;
+      IERC20(_asset).transfer(owner(),widrow);
+      emit widrowFeeEvent(_asset, widrow);
+    }
+
 }

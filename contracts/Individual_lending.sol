@@ -197,7 +197,42 @@ contract lendingPage is CoreFunction {
             userLendingContract[_to][_idContract].lock = _lock;   
        
     }
-  
+    function _increaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
+            userLendingContract[_to][_idContract].duration += _timeIncreas;  
+            emit newTimeExpireIncreas(_idContract, _timeIncreas);   
+    }
+    function _decreaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
+            require(userLendingContract[_to][_idContract].amountBorrow == 0);
+            userLendingContract[_to][_idContract].duration += _timeIncreas;
+            emit newTimeExpireDecreas(_idContract, _timeIncreas);     
+    }
+    function _liquidationCall(address _to,uint _idContract,uint _idBorrow) internal contractOwner(_to, _idContract) {
+        require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= _mockOracleCollateral(),"thresold Liquidation price not achieved");
+        // 1/4 viene lioquidato
+        uint liquidationAmount = borrowersXid[_idContract][_idBorrow].amountCollateral /4; // parte da liquidare
+        // tolgo dalla posizione del borrower il collaterale liquidato (quidni non puo prelevare)
+        borrowersXid[_idContract][_idBorrow].amountCollateral -= liquidationAmount;
+        // dallo status contratto tolgo il collaterale perche diventa prelevabile
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
+        // applico il premium che va tolto prima di scalare il debito 
+        uint premiumLiquidation = ((liquidationAmount * 5)/100)+1;
+        liquidationAmount -= premiumLiquidation;
+        // riduco il credito del lender
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= 750;//TEST ONLY liquidationAmount * _mockOracleCollateral();
+        // riduco il debito del borrower
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -=  750; //TEST ONLY liquidationAmount * 1 _mockOracleCollateral();
+        // aggiorniamo il ThresoldLiquidation
+        borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
+             _mockOracleBorrow() * borrowersXid[_idContract][_idBorrow].ammounBorrow,
+             userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral
+             );
+        // rendo prelevabile il collaterale
+        IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
+            borrowersXid[_idContract][_idBorrow].owner,
+            liquidationAmount + premiumLiquidation);
+     
+     emit LiquidationCall(_idContract,_idBorrow,borrowersXid[_idContract][_idBorrow].assetCollaterl,liquidationAmount + premiumLiquidation);
+    }
     //BORROW FUNCTION
     function _executeBorrow(address _to,uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) internal {
         //require(lock[_idContract] == false, "questo funziona");
@@ -291,113 +326,6 @@ contract lendingPage is CoreFunction {
         //BorrowerContract[_to][borrowersXid[_idContract].length] = newBorrower;
         IERC20(userLendingContract[_lender][_idContract].asset).transfer(_to, _amountBorrow);
     }
-    
-    // EXTERNAL FUNCTION
-    function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
-        _setAssettAvvalible(_newAsset);
-        emit NewAssetAvvalible(_newAsset, block.timestamp);
-    } 
-    function findAsset(address _asset) external view returns(bool){
-        return _findAsset(_asset);
-    }
-    function deposit(address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral) external nonReentrant() {
-        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral,_rateCollateral);
-    }
-    function listContractXuser(address _user) external view returns(uint[] memory){
-        return _listContractXuser(_user);
-    }
-    function getAssettAvvalible()external view returns (address[] memory ){
-        return _getAssettAvvalible(); 
-    }
-    function findContractLending(address _to,uint _id)external view returns(LendingContract memory){
-        return _findContractLending(_to, _id);
-    }
-     function increasDeposit(uint _idContract, uint _increasAmount) external nonReentrant(){
-        _increasDeposit(msg.sender, _idContract, _increasAmount);
-    }
-    function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
-        _decreasDeposit(msg.sender, _idContract, _decreasAmount);
-    }
-    function deleteContract(uint _idContract) external nonReentrant(){
-        _deleteContract(msg.sender, _idContract);
-    }
-     function executeBorrow(uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) external nonReentrant(){
-        _executeBorrow(msg.sender, _idContract, _lender, _amountBorrow, _assettCollateral, _amountCollateral);
-    }
-    function serchBorrowerPositionXContract(uint _idContract,address _borrower) external view returns (Borrower memory){
-        return _serchBorrowerPositionXContract(_idContract, _borrower);
-
-    }
-    function serchIndexBorrowerXContract(uint _idContract,address _borrower)external view returns(uint){
-        (,uint idFind) = _serchIndexBorrowerXContract(_idContract, _borrower);
-        return idFind;
-    }
-    function lockNewBorrow(address _to,uint _idContract,bool _lock)external nonReentrant(){
-       
-        _lockNewBorrow(_to, _idContract,_lock);
-    }
-
-    //// ^^^^^TESTED^^^^^
-    /// vvvvvvNON TESTEDvvvvv
-   
-    // MODIFIER
-    modifier contractOwner(address _to,uint _idContract){
-        require(
-           _findContractLending(_to,_idContract).owner == _to, "Not owner this contract" 
-        );
-        _;
-    }
-    // EVENT 
-
-     event NewAssetAvvalible(address indexed asset, uint timeStart);
-     event NewContractDeposit(
-        uint Id,
-        address indexed owner,
-        address indexed asset,
-        uint amount,
-        uint apr,
-        uint  deadline,
-        uint  penality,
-        address indexed collateral
-     );
-     event IncreasContractDeposit(
-        uint Id,
-        uint indexed amount,
-        uint indexed newAmount
-     );
-     event DecreasContractDeposit(
-        uint Id,
-        uint indexed amount,
-        uint indexed newAmount
-     );
-
-     event DeleteContractDeposit(
-        address indexed owner,
-        uint indexed id
-     );
-     event Borrow( address indexed Borrower,uint indexed Id_Contract, uint amount);
-
-     event repay(address indexed _to, uint indexed _idContract,uint _amount);
-     event applyPenality(address indexed _to,uint  indexed _idContract,uint _amount);
-
-     event newTimeExpireIncreas(uint indexed _idContract, uint indexed _timeIncreas);
-     event newTimeExpireDecreas(uint indexed _idContract, uint indexed _timeIncreas);
-
-    // mock function
-
-    function _mockOracleBorrow() internal pure returns(uint price){
-        price = 2;
-    }
-
-    function _mockOracleCollateral() internal pure returns(uint price){
-        price = 1;
-
-    }
-
-    //wiew amount of repay 
-    
-
-
     function _executeRepay(address _to, uint _idContract,uint _amount) internal {
         //Borrower memory loanSituation = _serchBorrowerPositionXContract(_idContract, _to);
         require(_to  ==  _serchBorrowerPositionXContract(_idContract, _to).owner ,"Not owner this loan");
@@ -451,40 +379,49 @@ contract lendingPage is CoreFunction {
         emit applyPenality(_to, _idContract,new_amount);
         return true;
     }
-    function _increaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
-            userLendingContract[_to][_idContract].duration += _timeIncreas;  
-            emit newTimeExpireIncreas(_idContract, _timeIncreas);   
+    // EXTERNAL FUNCTION
+    function setAssettAvvalible(address _newAsset) external nonReentrant() onlyOwner() {
+        _setAssettAvvalible(_newAsset);
+        emit NewAssetAvvalible(_newAsset, block.timestamp);
+    } 
+    function findAsset(address _asset) external view returns(bool){
+        return _findAsset(_asset);
     }
-    function _decreaseTimeExpire(address _to,uint _idContract, uint _timeIncreas)internal contractOwner(_to, _idContract){
-            require(userLendingContract[_to][_idContract].amountBorrow == 0);
-            userLendingContract[_to][_idContract].duration += _timeIncreas;
-            emit newTimeExpireDecreas(_idContract, _timeIncreas);     
+    function deposit(address _asset,uint _amount,uint _apr,uint _deadline,uint _penality,address _collateral,uint _rateCollateral) external nonReentrant() {
+        _deposit(msg.sender, _asset, _amount, _apr, _deadline, _penality, _collateral,_rateCollateral);
     }
-    function _liquidationCall(address _to,uint _idContract,uint _idBorrow) internal contractOwner(_to, _idContract) {
-        //require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= _mockOracleCollateral(),"thresold Liquidation price not achieved");
-        // 1/4 viene lioquidato
-        uint liquidationAmount = borrowersXid[_idContract][_idBorrow].amountCollateral /4; // parte da liquidare
-        // tolgo dalla posizione del borrower il collaterale liquidato (quidni non puo prelevare)
-        borrowersXid[_idContract][_idBorrow].amountCollateral -= liquidationAmount;
-        // dallo status contratto tolgo il collaterale perche diventa prelevabile
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
-        // applico il premium che va tolto prima di scalare il debito 
-        uint premiumLiquidation = ((liquidationAmount * 5)/100)+1;
-        liquidationAmount -= premiumLiquidation;
-        // riduco il credito del lender
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= 750;//TEST ONLY liquidationAmount * _mockOracleCollateral();
-        // riduco il debito del borrower
-        borrowersXid[_idContract][_idBorrow].ammounBorrow -=  750; //TEST ONLY liquidationAmount * 1 _mockOracleCollateral();
-        // aggiorniamo il ThresoldLiquidation
-        borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
-             _mockOracleBorrow() * borrowersXid[_idContract][_idBorrow].ammounBorrow,
-             userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral
-             );
-        // rendo prelevabile il collaterale
-        IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
-            borrowersXid[_idContract][_idBorrow].owner,
-            liquidationAmount + premiumLiquidation);
-     
+    function listContractXuser(address _user) external view returns(uint[] memory){
+        return _listContractXuser(_user);
+    }
+    function getAssettAvvalible()external view returns (address[] memory ){
+        return _getAssettAvvalible(); 
+    }
+    function findContractLending(address _to,uint _id)external view returns(LendingContract memory){
+        return _findContractLending(_to, _id);
+    }
+     function increasDeposit(uint _idContract, uint _increasAmount) external nonReentrant(){
+        _increasDeposit(msg.sender, _idContract, _increasAmount);
+    }
+    function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
+        _decreasDeposit(msg.sender, _idContract, _decreasAmount);
+    }
+    function deleteContract(uint _idContract) external nonReentrant(){
+        _deleteContract(msg.sender, _idContract);
+    }
+     function executeBorrow(uint _idContract,address _lender,uint _amountBorrow,address _assettCollateral,uint _amountCollateral) external nonReentrant(){
+        _executeBorrow(msg.sender, _idContract, _lender, _amountBorrow, _assettCollateral, _amountCollateral);
+    }
+    function serchBorrowerPositionXContract(uint _idContract,address _borrower) external view returns (Borrower memory){
+        return _serchBorrowerPositionXContract(_idContract, _borrower);
+
+    }
+    function serchIndexBorrowerXContract(uint _idContract,address _borrower)external view returns(uint){
+        (,uint idFind) = _serchIndexBorrowerXContract(_idContract, _borrower);
+        return idFind;
+    }
+    function lockNewBorrow(address _to,uint _idContract,bool _lock)external nonReentrant(){
+       
+        _lockNewBorrow(_to, _idContract,_lock);
     }
 
     function viewAmountLoan(address  _borrower,uint _idContract) external view returns(uint loanCompouse) {
@@ -505,19 +442,185 @@ contract lendingPage is CoreFunction {
     function decreaseTimeExpire(uint _idContract, uint _timeIncreas)external nonReentrant(){
           _decreaseTimeExpire(msg.sender, _idContract, _timeIncreas);
     }
-
     function liquidationCall(uint _idContract,uint _idBorrow) external nonReentrant(){
         _liquidationCall(msg.sender,_idContract,_idBorrow);
     }
 
-    // TEst Function only
-    //function testTimeZero(address _to,uint _idContract)external {
-    //        //serLendingContract[_to][_idContract].duration = _timeIncreas;
-    //        (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
-    //        borrowersXid[_idContract][indexBorrow].expiration = 0;
-    //}
+    //// ^^^^^TESTED^^^^^
+    /// vvvvvvNON TESTEDvvvvv
+   
+    // MODIFIER
+    modifier contractOwner(address _to,uint _idContract){
+        require(
+           _findContractLending(_to,_idContract).owner == _to, "Not owner this contract" 
+        );
+        _;
+    }
+    // EVENT 
+
+     event NewAssetAvvalible(address indexed asset, uint timeStart);
+     event NewContractDeposit(
+        uint Id,
+        address indexed owner,
+        address indexed asset,
+        uint amount,
+        uint apr,
+        uint  deadline,
+        uint  penality,
+        address indexed collateral
+     );
+     event IncreasContractDeposit(
+        uint Id,
+        uint indexed amount,
+        uint indexed newAmount
+     );
+     event DecreasContractDeposit(
+        uint Id,
+        uint indexed amount,
+        uint indexed newAmount
+     );
+
+     event DeleteContractDeposit(
+        address indexed owner,
+        uint indexed id
+     );
+     event Borrow( address indexed Borrower,uint indexed Id_Contract, uint amount);
+
+     event repay(address indexed _to, uint indexed _idContract,uint _amount);
+     event applyPenality(address indexed _to,uint  indexed _idContract,uint _amount);
+
+     event newTimeExpireIncreas(uint indexed _idContract, uint indexed _timeIncreas);
+     event newTimeExpireDecreas(uint indexed _idContract, uint indexed _timeIncreas);
+     event LiquidationCall (uint indexed _idContract,uint indexed _idBorrow, address assetsLiquidate, uint amount);
+
+    // mock function
+
+    function _mockOracleBorrow() internal pure returns(uint price){
+        price = 2;
+    }
+
+    function _mockOracleCollateral() internal pure returns(uint price){
+        price = 1;
+
+    }
+
     
-}/**
+    
+
+    event RecoveryCredit(uint indexed _idContract,address indexed collateral, uint amount);
+    
+    function _RecoverCreditsExpired(address _to,uint _idContract)internal contractOwner(_to, _idContract) {
+        _lockNewBorrow(_to,_idContract,true);
+        uint creditExpired;
+        for(uint i; i < borrowersXid[_idContract].length ; i++){
+            
+            creditExpired+=_collateralSeizure( _idContract,i);
+        }
+        delete borrowersXid[_idContract] ;
+        userCreditExpire[_to][userLendingContract[_to][_idContract].collateral] += creditExpired;
+        emit RecoveryCredit(_idContract, userLendingContract[_to][_idContract].collateral, userCreditExpire[_to][userLendingContract[_to][_idContract].collateral]);
+    }
+
+    event RecoverySingleCredit(uint indexed _idContract,address indexed collateral, uint amount);
+
+    function _RecoverSingleCreditExpired(address _to,uint _idContract,uint _idBorrow)internal contractOwner(_to, _idContract) {
+        _lockNewBorrow(_to,_idContract,true);
+        
+        uint singleCreditExpired;
+        singleCreditExpired +=_collateralSeizure( _idContract, _idBorrow);
+        
+        borrowersXid[_idContract][_idBorrow] = borrowersXid[_idContract][borrowersXid[_idContract].length -1];
+        borrowersXid[_idContract].pop();
+
+        userCreditExpire[_to][userLendingContract[_to][_idContract].collateral] += singleCreditExpired; 
+        emit RecoverySingleCredit(_idContract, userLendingContract[_to][_idContract].collateral, userCreditExpire[_to][userLendingContract[_to][_idContract].collateral]);
+    }
+
+    event WidrowCredit(address indexed _to,uint indexed _idContract,address indexed collateral, uint amount);
+    
+    function _widrowCreditExpire(address _to,uint _idContract)internal contractOwner(_to, _idContract){
+        require(userLendingContract[_to][_idContract].lock == true);
+        require(userLendingContract[_to][_idContract].amountCollateral ==0);
+        uint widrow = userCreditExpire[_to][userLendingContract[_to][_idContract].collateral];
+        userCreditExpire[_to][userLendingContract[_to][_idContract].collateral] = 0;
+        IERC20(userLendingContract[_to][_idContract].collateral).transfer(_to, widrow);
+
+        emit WidrowCredit(_to, _idContract, userLendingContract[_to][_idContract].collateral, widrow);
+    }
+
+
+    function _collateralSeizure(uint _idContract,uint _idBorrow) internal returns(uint){
+        require(borrowersXid[_idContract][_idBorrow].expiration > block.timestamp,"loan not expired");
+        uint collateral = borrowersXid[_idContract][_idBorrow].amountCollateral;
+        uint borrowExpired = borrowersXid[_idContract][_idBorrow].ammounBorrow;
+        borrowersXid[_idContract][_idBorrow].amountCollateral = 0;
+        borrowersXid[_idContract][_idBorrow].blockStart = 0;
+        borrowersXid[_idContract][_idBorrow].ammounBorrow = 0;
+        if(collateral * _mockOracleCollateral() <=  borrowExpired){
+            userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= collateral;
+            userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= borrowExpired;
+            return collateral;   
+        }else {
+            uint contractFee = ((((collateral * _mockOracleCollateral() -  borrowExpired * _mockOracleBorrow())/_mockOracleCollateral())*20)/100)+1;
+            userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= collateral;
+            userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= borrowExpired;
+            balanceFee[borrowersXid[_idContract][_idBorrow].assetCollaterl] += contractFee;
+            return collateral - contractFee;   
+        }
+    }
+
+    /**
+       struct LendingContract {
+        uint id;
+        address owner;
+        bool lock;
+        address asset;
+        //uint amount;
+        uint amountAvvalible;
+        uint apr;
+        uint duration;
+        uint penality;
+        address collateral;
+        uint amountBorrow;
+        uint rateCollateral;
+        uint amountCollateral;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+     struct Borrower{
+        address owner;
+        uint idContract;
+        address assetBorrow;
+        uint ammounBorrow; // da correggere
+        //uint heltBorrow;
+        address assetCollaterl;
+        uint amountCollateral;
+        uint liquidationThreshold;
+        uint expiration;
+        uint blockStart;
+        uint aprLoan;
+        address lender;
+    }*/
+     
+    
+
+
+
+   
+
+    
+
+}
+
+
+    
+/**
 
 RIMUOVERE TUTTE LE OPERAZIONI DI TEST
 
