@@ -86,16 +86,19 @@ contract("Repay Function and aftermath", accounts =>{
     //await lendingP.testTimeZero(account,1)// test function only
     
     let position = await lendingP.serchBorrowerPositionXContract(1,account2);
-    console.log(position)
+    //console.log(position)
     result  = await lendingP.findContractLending(account,1)
-    console.log("after give a loan " + result)
-    await lendingP.liquidationCall(1,0);
+    //console.log("after give a loan " + result)
+    await truffleAssert.reverts(
+      lendingP.liquidationCall(1,0)
+    )
     
+  
     position = await lendingP.serchBorrowerPositionXContract(1,account2);
-    console.log(position)
+    //console.log(position)
 
     result  =await lendingP.findContractLending(account,1)
-    console.log("after  partial loan repay " + result)
+    //console.log("after  partial loan repay " + result)
 
     })
 

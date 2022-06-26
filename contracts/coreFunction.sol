@@ -57,4 +57,49 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
       emit widrowFeeEvent(_asset, widrow);
     }
 
+
+       //-----> Search function user 
+    function _listContractXuser(address _user) internal view returns(uint[] memory){
+       return listContractUser[_user];
+    }
+    function _findContractLending(address _to,uint _id)internal view returns(LendingContract memory){
+        return userLendingContract[_to][_id];
+    }
+     function _findArrayindexContract(address _to,uint deleteId)internal view returns(uint,bool){
+            for(uint i=0 ;i<listContractUser[_to].length;i++){
+                if (deleteId == listContractUser[_to][i]){
+                    return (i,true);
+                }
+            }
+            return (0,false);
+  
+    }
+    function _findContractAvvalible(uint _IdFind)internal view returns(uint,bool){
+     
+         for(uint i=0 ;i<listContract.length;i++){
+             if (_IdFind == listContract[i]){
+                return (i,true);
+             }
+         }
+        return (0,false); 
+    }
+
+     //------> Search function Borrower
+    function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
+      for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+          if(borrowersXid[_idContract][i].owner == _borrower){
+              return (true,i);
+          }
+      }
+      return (false,0);
+    }
+    function _serchBorrowerPositionXContract(uint _idContract,address _borrower) internal view returns(Borrower memory){
+       for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
+           if(borrowersXid[_idContract][i].owner == _borrower){
+               return (borrowersXid[_idContract][i]);
+           }
+       }
+       revert("Borrower for this contract not present");
+    }
+
 }
