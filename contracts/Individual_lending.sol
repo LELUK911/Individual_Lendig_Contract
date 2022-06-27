@@ -78,9 +78,7 @@ contract lendingPage is CoreFunction {
 
         userLendingContract[_to][_idContract].amountAvvalible -= _decreasAmount;
 
-        //uint balanceContract = IERC20(_findContractLending(_to,_idContract).asset).balanceOf(address(this)); 
         IERC20(_findContractLending(_to,_idContract).asset).transfer(_to,_decreasAmount);
-        //require(balanceContract -_decreasAmount == IERC20(_findContractLending(_to,_idContract).asset).balanceOf(address(this)));
 
         emit DecreasContractDeposit(
             _findContractLending(_to,_idContract).id,
@@ -470,7 +468,7 @@ contract lendingPage is CoreFunction {
     
     
 
-
+//assetBorrow
 
     
 

@@ -47,17 +47,12 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
     function _getAssettAvvalible()internal view returns (address[] memory ){
         return assetAvvalible; 
     }
-
-    event widrowFeeEvent(address indexed asset,uint amount);
-    
     function _widrowFeeContract(address _asset)internal onlyOwner(){
       uint widrow = balanceFee[_asset];
       balanceFee[_asset] = 0;
       IERC20(_asset).transfer(owner(),widrow);
       emit widrowFeeEvent(_asset, widrow);
     }
-
-
        //-----> Search function user 
     function _listContractXuser(address _user) internal view returns(uint[] memory){
        return listContractUser[_user];
@@ -75,7 +70,6 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
   
     }
     function _findContractAvvalible(uint _IdFind)internal view returns(uint,bool){
-     
          for(uint i=0 ;i<listContract.length;i++){
              if (_IdFind == listContract[i]){
                 return (i,true);
@@ -83,7 +77,6 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
          }
         return (0,false); 
     }
-
      //------> Search function Borrower
     function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
       for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
@@ -102,4 +95,5 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
        revert("Borrower for this contract not present");
     }
 
+     event widrowFeeEvent(address indexed asset,uint amount);
 }
