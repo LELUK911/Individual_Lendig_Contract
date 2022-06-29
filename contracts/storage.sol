@@ -57,4 +57,8 @@ contract Storage {
 
     mapping(address => uint) internal balanceFee;
 
+          //Asset => priceFeed
+    mapping(address=>address) internal  addressPriceFeed;
+    // assett/usd price
+
 }

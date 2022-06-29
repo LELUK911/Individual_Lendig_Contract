@@ -8,8 +8,10 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 import "../node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./storage.sol";
 import "./interestCalculator.sol";
+import "../node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "./chainlinkUtils/AggregatorV3.sol";
 
-contract CoreFunction is Storage,Ownable,ReentrancyGuard {
+contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
     //library
 
     using Counters for Counters.Counter;
@@ -96,4 +98,27 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard {
     }
 
      event widrowFeeEvent(address indexed asset,uint amount);
+
+
+
+
+    // FUNCTION SET PRICE FEED //
+   
+    function _addAddressPriceeFeed(address _asset,address _addressPriceFeed) internal {
+        require(_asset != address(0) && _addressPriceFeed != address(0), "Set correct address" );
+        require(_findAsset(_asset),"insert new asset before set address PriceFeed");
+        addressPriceFeed[_asset] = _addressPriceFeed;
+    }
+
+    function oraclePrice(address _asset)internal view returns(uint) {
+        return SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])); 
+    }
+
+
+    function addAddressPriceeFeed(address _asset,address _addressPriceFeed) external onlyOwner(){
+        _addAddressPriceeFeed(_asset,_addressPriceFeed);
+    }
+
+
+
 }
