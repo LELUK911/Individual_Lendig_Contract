@@ -3,9 +3,10 @@ const mockWeth = artifacts.require('mockWeth');
 const mockWbtc = artifacts.require('mockWbtc');
 const LendingPage = artifacts.require('lendingPage');
 
+const { passes } = require("truffle-assertions");
 const truffleAssert = require("truffle-assertions");
 
-contract("LendingContract Borrow Function", accounts =>{
+passes.contract("LendingContract Borrow Function", accounts =>{
     const account = accounts[0];
     const account2 = accounts[1];
     

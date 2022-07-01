@@ -18,10 +18,11 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+ const HDWalletProvider = require('@truffle/hdwallet-provider');
+
+ const fs = require('fs');
+ const mnemonic = fs.readFileSync(".secret").toString().trim();
+ const https = fs.readFileSync(".https").toString().trim();
 
 module.exports = {
   /**
@@ -67,6 +68,14 @@ module.exports = {
     //   timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
     //   skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
     // },
+     kovan: {
+      provider: () => new HDWalletProvider(mnemonic, https),
+       network_id: 42,       // Ropsten's id
+       gas: 5500000,        // Ropsten has a lower block limit than mainnet
+       confirmations: 5,    // # of confirmations to wait between deployments. (default: 0)
+       timeoutBlocks: 600,  // # of blocks before a deployment times out  (minimum/default: 50)
+       skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+     },
     //
     // Useful for private networks
     // private: {

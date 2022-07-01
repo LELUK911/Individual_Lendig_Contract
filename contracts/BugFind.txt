@@ -1,0 +1,2 @@
+1.ok correggere le virgole nella conversione di prezzo in dollari di assett con 18 decimali
+2. possiamo prelevare parte del collaterale?

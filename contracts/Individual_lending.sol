@@ -26,7 +26,7 @@ contract lendingPage is CoreFunction {
         require(_to != address(0), "invalid address");
         require(_asset != _collateral, "collateral not valid");
         require(_findAsset(_asset),"asset don't found");
-        require(addressPriceFeed[_asset] != address(0),"Pricefeed address miss, whait owner set address priceFeed for this asset");
+        //TEST require(addressPriceFeed[_asset] != address(0),"Pricefeed address miss, whait owner set address priceFeed for this asset");
         require(_findAsset(_collateral),"collateral don't found");
         require(IERC20(_asset).balanceOf(_to) >= _amount,"balance user low");
         require(IERC20(_asset).allowance(_to, address(this)) >= _amount,"alowance user low");
@@ -231,8 +231,10 @@ contract lendingPage is CoreFunction {
     }
     function _oldBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation,uint indexBorrow)internal {
         require(_to == borrowersXid[_idContract][indexBorrow].owner, "Not owner this loan" );
-        require(_healFactor(_mockOracleCollateral() *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
-                             _mockOracleBorrow() *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
+        require(_healFactor( oraclePrice(borrowersXid[_idContract][indexBorrow].assetCollaterl)
+                *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
+                             oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) 
+                             *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
                              )> userLendingContract[_lender][_idContract].rateCollateral); 
 
         IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
@@ -307,7 +309,8 @@ contract lendingPage is CoreFunction {
             borrowersXid[_idContract][indexBorrow].blockStart = block.timestamp;
             borrowersXid[_idContract][indexBorrow].liquidationThreshold = 
                 _liquidationThresold(
-                      borrowersXid[_idContract][indexBorrow].ammounBorrow * _mockOracleBorrow(),
+                      borrowersXid[_idContract][indexBorrow].ammounBorrow * 
+                      oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow),
                       userLendingContract[_lender][_idContract].rateCollateral);
             return true;
     }
@@ -396,6 +399,43 @@ contract lendingPage is CoreFunction {
         _RecoverSingleCreditExpired(msg.sender, _idContract, _idBorrow);
     }
 
+
+
+
+
+
+    event widrwCollateralLoan(uint _amount,address indexed _asset,uint indexed _idContract);
+    function _widrowCollateral(uint _amount,address _to,uint _idContract) internal {
+            require(_to  ==  _serchBorrowerPositionXContract(_idContract, _to).owner ,"Not owner this loan");
+            (,uint indexBorrow) = _serchIndexBorrowerXContract(_idContract, _to);
+            borrowersXid[_idContract][indexBorrow].ammounBorrow = InterestCalculator._getTotalLoan(
+                borrowersXid[_idContract][indexBorrow].ammounBorrow,
+                borrowersXid[_idContract][indexBorrow].aprLoan,
+                borrowersXid[_idContract][indexBorrow].blockStart);
+            require(borrowersXid[_idContract][indexBorrow].ammounBorrow >= _amount, "You can only Loan amount");
+            address _lender = borrowersXid[_idContract][indexBorrow].lender;
+            require(
+                _healFactor(
+                    oraclePrice(
+                        borrowersXid[_idContract][indexBorrow].assetCollaterl)*borrowersXid[_idContract][indexBorrow].amountCollateral -_amount,
+                    oraclePrice(
+                        borrowersXid[_idContract][indexBorrow].assetBorrow)*borrowersXid[_idContract][indexBorrow].ammounBorrow
+                        ) >  userLendingContract[_lender][_idContract].rateCollateral,"This widrow compromises your loan"   
+            );
+
+            userLendingContract[_lender][_idContract].amountCollateral -= _amount;
+            borrowersXid[_idContract][indexBorrow].blockStart = block.timestamp;
+            borrowersXid[_idContract][indexBorrow].liquidationThreshold = 
+                _liquidationThresold(
+                      borrowersXid[_idContract][indexBorrow].ammounBorrow * 
+                      oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow),
+                      userLendingContract[_lender][_idContract].rateCollateral);
+
+            IERC20(borrowersXid[_idContract][indexBorrow].assetCollaterl).transfer(_to, _amount);
+            emit widrwCollateralLoan(_amount,borrowersXid[_idContract][indexBorrow].assetCollaterl, _idContract);
+
+    }
+
  
    
     // MODIFIER
@@ -446,40 +486,18 @@ contract lendingPage is CoreFunction {
      event RecoverySingleCredit(uint indexed _idContract,address indexed collateral, uint amount);
      event WidrowCredit(address indexed _to,uint indexed _idContract,address indexed collateral, uint amount);
 
+    
+    
     // mock function
 
-    function _mockOracleBorrow() internal pure returns(uint price){
-        price = 2;
-    }
+    //function _mockOracleBorrow() internal pure returns(uint price){
+    //    price = 2;
+    //}
 
-    function _mockOracleCollateral() internal pure returns(uint price){
-        price = 1;
+    //function _mockOracleCollateral() internal pure returns(uint price){
+    //    price = 1;
+//
+    //}
 
-    }
-
-    
-    
-
-    
-   
-
-    
-
-
-   
-
-
-
-
-
-    
-    
-
-    
-    
-
-//assetBorrow
-
-    
 
 }

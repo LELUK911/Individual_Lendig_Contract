@@ -49,7 +49,7 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
     function _getAssettAvvalible()internal view returns (address[] memory ){
         return assetAvvalible; 
     }
-    function _widrowFeeContract(address _asset)internal onlyOwner(){
+    function _widrowFeeContract(address _asset)internal {
       uint widrow = balanceFee[_asset];
       balanceFee[_asset] = 0;
       IERC20(_asset).transfer(owner(),widrow);
@@ -99,8 +99,9 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
 
      event widrowFeeEvent(address indexed asset,uint amount);
 
-
-
+    function widrowFeeContract(address _asset)external onlyOwner() nonReentrant(){
+        _widrowFeeContract(_asset);
+    }
 
     // FUNCTION SET PRICE FEED //
    
@@ -110,8 +111,28 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
         addressPriceFeed[_asset] = _addressPriceFeed;
     }
 
+    //mock oracle
+    mapping(address=>uint) public mockprice;
+    function setMockPrice(address _asset,uint _price) public{
+        mockprice[_asset] = _price;
+    }
+
+    function setTimeExpire(address _to,uint _idContract,uint _time) external{
+        userLendingContract[_to][_idContract].duration += _time; 
+    }
+
+
+
+    /////
+
+
+
     function oraclePrice(address _asset)internal view returns(uint) {
-        return SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])); 
+        //return (SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])))*10**10; 
+        
+        ////mock
+        return mockprice[_asset];
+        ///
     }
 
 
