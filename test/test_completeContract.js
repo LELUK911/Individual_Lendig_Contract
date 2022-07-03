@@ -8,6 +8,7 @@
 
 
         verfy CALCUL APR  in library
+        Come trovare tutti i dati per metterli nel front end e cercare i prestiti 
 */
 const mockUsdc = artifacts.require('mockUsdc');
 const mockWeth = artifacts.require('mockWeth');
@@ -20,12 +21,12 @@ const decimal = "000000000000000000"
 
 contract("FINAL TEST",async accounts =>{
     const account = accounts[0]; // OWNER
-    const account1 = accounts[1];// start => 1kk all asset. =>
-    const account2 = accounts[2];// start => 1kk all asset. =>
-    const account3 = accounts[3];// start => 1kk all asset. =>
-    const account4 = accounts[4];// start => 1kk all asset. =>
-    const account5 = accounts[5];// start => 1kk all asset. =>
-    const account6 = accounts[6];// start => 1kk all asset. =>
+    const account1 = accounts[1];// start => 1kk all asset. => deposit
+    const account2 = accounts[2];// start => 1kk all asset. => deposit
+    const account3 = accounts[3];// start => 1kk all asset. => deposit
+    const account4 = accounts[4];// start => 1kk all asset. => loan
+    const account5 = accounts[5];// start => 1kk all asset. => loan
+    const account6 = accounts[6];// start => 1kk all asset. => 
     const account7 = accounts[7];// start => 1kk all asset. =>
 
     it("Owner Set NewAsset ", async ()=>{
@@ -39,9 +40,9 @@ contract("FINAL TEST",async accounts =>{
         await lendingP.setAssettAvvalible(btc.address)
 
         // SET MOCK PRICE Moralis.Units.Token("0.5", "18")
-        await lendingP.setMockPrice(usdc.address,"1000000000000000000")// price usd
-        await lendingP.setMockPrice(weth.address,"1063390000000000000000")// price eth
-        await lendingP.setMockPrice(btc.address,"19355130000000000000000")// price btc
+        await lendingP.setMockPrice(usdc.address,"1000000000000000000")// price usd  1$
+        await lendingP.setMockPrice(weth.address,"1063390000000000000000")// price eth 1063.39$
+        await lendingP.setMockPrice(btc.address,"19355130000000000000000")// price btc 19355.13$
   
     })
     it("transfer asset for test", async ()=>{
@@ -87,7 +88,7 @@ contract("FINAL TEST",async accounts =>{
 
         //account1
 
-        // deposit 100.000k usdc  rate 2 apr 4.5%  penality 8% btc collateral
+        // deposit 100k usdc  rate 2 apr 4.5%  penality 8% btc collateral
         // deposit 10 btc  rate 5 apr 10%  penality 10%  weth collateral
         
         await usdc.approve(lendingP.address,"100000000000000000000000",{from:account1})
@@ -132,28 +133,10 @@ contract("FINAL TEST",async accounts =>{
         
         await weth.approve(lendingP.address,"1000000000000000000000000",{from:account2})
         
-        await lendingP.deposit(
-             weth.address,
-             "1000000000000000000000000",// amount
-             0.25*100, // apr
-             155163541,//death line
-             5,//penality
-             usdc.address, // address collateral
-             3,//rate
-             {from:account2}
-           )
+        await lendingP.deposit(weth.address,"1000000000000000000000000",0.25*100, 155163541,5,usdc.address, 3,{from:account2})
 
         await btc.approve(lendingP.address,"240000"+decimal,{from:account2})
-        await lendingP.deposit(
-             btc.address,
-             "240000"+decimal,
-             1.25*100,
-             5183200,
-             5,
-             weth.address,
-             7,
-             {from:account2}
-            )
+        await lendingP.deposit(btc.address,"240000"+decimal,1.25*100,5183200,5,weth.address,7,{from:account2})
 
         //
                 
@@ -171,16 +154,7 @@ contract("FINAL TEST",async accounts =>{
         
         await weth.approve(lendingP.address,"100" + decimal,{from:account3})
         
-        await lendingP.deposit(
-             weth.address,
-             "100"+decimal,// amount
-             6.25*100, // apr
-             1334541,//death line
-             10,//penality
-             usdc.address, // address collateral
-             4,//rate
-             {from:account3}
-           )       
+        await lendingP.deposit(weth.address,"100"+decimal,6.25*100,1334541,10,usdc.address,4,{from:account3})       
     })
     it("Increase  one deposit + chek (no borrow)", async ()=>{
         const usdc = await mockUsdc.deployed();
@@ -221,7 +195,19 @@ contract("FINAL TEST",async accounts =>{
         await lendingP.lockNewBorrow(account1,1,true,{from:account1})   
   
         result  = await lendingP.findContractLending(account1,1)
-        console.log("after lock" + result)       
+        //console.log("after lock" + result)       
+    })
+    it("Delete deposit (no borrow)", async ()=>{
+        const lendingP = await LendingPage.deployed();
+        //account3
+
+        let list = await lendingP.viewListcontract();
+        //console.log(JSON.stringify(list))
+        await lendingP.deleteContract(1,{from:account1})
+        let result  = await lendingP.findContractLending(account1,1)
+        //console.log("after" + result)
+        list = await lendingP.viewListcontract();
+        //console.log(JSON.stringify(list))       
     })
     it("Incread time expire + chek (no Borrow)", async ()=>{
         const lendingP = await LendingPage.deployed();
@@ -243,9 +229,7 @@ contract("FINAL TEST",async accounts =>{
         result  = await lendingP.findContractLending(account2,4)
         //console.log("after" + result)       
     })
-
-
-
+    
     //SEARCH FUNCTION
     it("Question function ->find Asset <-", async ()=>{
         const lendingP = await LendingPage.deployed();
@@ -274,12 +258,8 @@ contract("FINAL TEST",async accounts =>{
             //console.log(result) //CHECK
           }
     })
-
-
     // REVERT
-
-     // CHECK check autorization 
-
+    // CHECK check autorization 
      it("Not Autorizate Set NewAsset ", async () => {
         const usdc = await mockUsdc.deployed();
         const lendingP = await LendingPage.deployed();
@@ -287,8 +267,8 @@ contract("FINAL TEST",async accounts =>{
         await truffleAssert.reverts(
           lendingP.setAssettAvvalible(usdc.address, { from: account2 })
         );
-      });
-      it("Not set one assett already push", async ()=>{
+    });
+    it("Not set one assett already push", async ()=>{
         const usdc = await mockUsdc.deployed();
         const weth = await mockWeth.deployed();
         const lendingP = await LendingPage.deployed();
@@ -296,6 +276,51 @@ contract("FINAL TEST",async accounts =>{
         await truffleAssert.reverts(
           lendingP.setAssettAvvalible(usdc.address),
         )
-      })
+     })
+
+     //BORROW FUNCTION
+    it("Take borrow + check asset and contract data accounta 4 ", async ()=>{
+        // single loan position
+        const usdc = await mockUsdc.deployed();
+        const weth = await mockWeth.deployed();
+        const btc = await mockWbtc.deployed();
+        const lendingP = await LendingPage.deployed();
+        
+        // per i valori minimi di collaterale / max prestito ce ne occupiamo nel front-end
+        await weth.approve(lendingP.address,"200"+decimal,{from :account4})
+        await lendingP.executeBorrow(2,account1,'2'+decimal,weth.address,'200'+decimal,{from:account4})
+        let result  =await lendingP.findContractLending(account1,2)
+        //console.log("Take loan contract Id 2 " + result) 
+        let position = await lendingP.serchBorrowerPositionXContract(2,account4)
+        console.log(position)
+            
+    })
+    it("Take borrow + check asset and contract data accounta 5 ", async ()=>{
+        // take usdc from contract 4 
+        // dep usdc in contract 3 and loan weth 
+        const usdc = await mockUsdc.deployed();
+        const weth = await mockWeth.deployed();
+        const btc = await mockWbtc.deployed();
+        const lendingP = await LendingPage.deployed();
+        
+        const result  =await lendingP.findContractLending(account2,4)
+        //console.log(result) //CHECK
+        await weth.approve(lendingP.address,'2000'+decimal,{from:account5})
+        await lendingP.executeBorrow(4,account2,'1000'+decimal,weth.address,"17"+decimal,{from:account5})
+        result  = await lendingP.findContractLending(account2,4)
+        console.log(result)
+
+        await weth.approve(lendingP.address,'200'+decimal,{from:account5})
+        await lendingP.executeBorrow(3,account2,'2'+decimal,weth.address,"200"+decimal,{from:account5})
+
+        //result  = await lendingP.findContractLending(account2,3)
+        console.log(result)
+      
+    
+    
+    
+    
+    })
+    //SEARCH
 
 })

@@ -141,11 +141,12 @@ contract lendingPage is CoreFunction {
         userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
         uint premiumLiquidation = ((liquidationAmount * 5)/100)+1;
         liquidationAmount -= premiumLiquidation;
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= 750;//TEST ONLY liquidationAmount * _mockOracleCollateral();
-        borrowersXid[_idContract][_idBorrow].ammounBorrow -=  750; //TEST ONLY liquidationAmount * 1 _mockOracleCollateral();
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -= liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
         borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
              oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) * borrowersXid[_idContract][_idBorrow].ammounBorrow,
-             userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral
+             userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral,
+             borrowersXid[_idContract][_idBorrow].amountCollateral
              );
         IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
             borrowersXid[_idContract][_idBorrow].owner,
@@ -220,9 +221,10 @@ contract lendingPage is CoreFunction {
             _newBorrower(_to,_lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation);
         }else{
             //_liquidationThresold( uint _priceBorrowEth,uint _rateLiquidation)
-            require(_liquidationThresold(
-                          oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) * borrowersXid[_idContract][indexBorrow].amountCollateral,
-                           _rateLiquidation) > borrowersXid[_idContract][indexBorrow].liquidationThreshold);
+            //require(_liquidationThresold(
+            //              oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) * borrowersXid[_idContract][indexBorrow].amountCollateral,
+            //               _rateLiquidation,
+            //               borrowersXid[_idContract][indexBorrow].amountCollateral+_amountCollateral) > borrowersXid[_idContract][indexBorrow].liquidationThreshold,"qui");
             _oldBorrower(_to, _lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation, indexBorrow);
 
         }
@@ -231,11 +233,11 @@ contract lendingPage is CoreFunction {
     }
     function _oldBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation,uint indexBorrow)internal {
         require(_to == borrowersXid[_idContract][indexBorrow].owner, "Not owner this loan" );
-        require(_healFactor( oraclePrice(borrowersXid[_idContract][indexBorrow].assetCollaterl)
-                *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
-                             oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) 
-                             *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
-                             )> userLendingContract[_lender][_idContract].rateCollateral); 
+        //require(_healFactor( oraclePrice(borrowersXid[_idContract][indexBorrow].assetCollaterl)
+        //        *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
+        //                     oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) 
+        //                     *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
+        //                     )> userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral"); 
 
         IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
         borrowersXid[_idContract][indexBorrow].ammounBorrow += _amountBorrow;// aggiornata la variabile globale
@@ -243,7 +245,9 @@ contract lendingPage is CoreFunction {
         borrowersXid[_idContract][indexBorrow].liquidationThreshold =
                 _liquidationThresold(
                     oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow)
-                    *borrowersXid[_idContract][indexBorrow].ammounBorrow,_rateLiquidation);
+                    *borrowersXid[_idContract][indexBorrow].ammounBorrow,
+                    _rateLiquidation,borrowersXid[_idContract][indexBorrow].amountCollateral
+                    );
         userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
         userLendingContract[_lender][_idContract].amountBorrow += _amountBorrow; // incrementiamo il capitale prestato
         userLendingContract[_lender][_idContract].amountCollateral += _amountCollateral;// aggiungiamo la quantita di collaterale presente nel contratto
@@ -251,10 +255,12 @@ contract lendingPage is CoreFunction {
 
     }
     function _newBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation)internal {
-        require(_healFactor(oraclePrice(_assettCollateral) * _amountCollateral,
-            oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow) 
-            > userLendingContract[_lender][_idContract].rateCollateral);
-
+        
+        //(uint _priceCollateralETH, uint _priceBorrowEth)
+        //require(_healFactor(oraclePrice(_assettCollateral) * _amountCollateral,
+        //    oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow) 
+        //    > userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral amount");
+        
         IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
         Borrower memory newBorrower = Borrower(
                                             _to,
@@ -264,9 +270,10 @@ contract lendingPage is CoreFunction {
                                             _assettCollateral,
                                             _amountCollateral,
                                             _liquidationThresold(
-                                                  oraclePrice(userLendingContract[_lender][_idContract].asset)
-                                                  *_amountBorrow,
-                                                 _rateLiquidation),
+                                                oraclePrice(userLendingContract[_lender][_idContract].asset) *_amountBorrow,
+                                                 _rateLiquidation,
+                                                 _amountCollateral
+                                                 ),
                                             block.timestamp + userLendingContract[_lender][_idContract].duration,
                                             block.timestamp,
                                             _findContractLending(_lender,_idContract).apr,
@@ -311,7 +318,8 @@ contract lendingPage is CoreFunction {
                 _liquidationThresold(
                       borrowersXid[_idContract][indexBorrow].ammounBorrow * 
                       oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow),
-                      userLendingContract[_lender][_idContract].rateCollateral);
+                      userLendingContract[_lender][_idContract].rateCollateral,
+                      borrowersXid[_idContract][indexBorrow].amountCollateral);
             return true;
     }
     function _penalityLoan ( uint _amount,address _to,uint _idContract) internal returns(bool){
@@ -354,6 +362,7 @@ contract lendingPage is CoreFunction {
     function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
         _decreasDeposit(msg.sender, _idContract, _decreasAmount);
     }
+    //deprecate
     function deleteContract(uint _idContract) external nonReentrant(){
         _deleteContract(msg.sender, _idContract);
     }
@@ -387,6 +396,9 @@ contract lendingPage is CoreFunction {
     }
     function liquidationCall(uint _idContract,uint _idBorrow) external nonReentrant(){
         _liquidationCall(msg.sender,_idContract,_idBorrow);
+    }
+    function viewListcontract()external view returns(uint[] memory list){
+        list = listContract;
     }
     //// vvvvvv NO TESTED vvvvvvv
     function widrowCreditExpire(uint _idContract)external nonReentrant(){    
@@ -429,7 +441,9 @@ contract lendingPage is CoreFunction {
                 _liquidationThresold(
                       borrowersXid[_idContract][indexBorrow].ammounBorrow * 
                       oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow),
-                      userLendingContract[_lender][_idContract].rateCollateral);
+                      userLendingContract[_lender][_idContract].rateCollateral,
+                      userLendingContract[_lender][_idContract].amountCollateral
+                      );
 
             IERC20(borrowersXid[_idContract][indexBorrow].assetCollaterl).transfer(_to, _amount);
             emit widrwCollateralLoan(_amount,borrowersXid[_idContract][indexBorrow].assetCollaterl, _idContract);

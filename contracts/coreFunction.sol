@@ -26,14 +26,21 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
         assetAvvalible.push(_newAsset);
            
     }
-    function _healFactor(uint _priceCollateralETH, uint _priceBorrowEth) internal pure returns(uint){
-        return (_priceCollateralETH/_priceBorrowEth);
+    function _healFactor(uint _valueCollateral, uint _valueBorrow) internal pure returns(uint){
+        return (_valueCollateral/_valueBorrow);
     }
-    function _liquidationThresold( uint _priceBorrowEth,uint _rateLiquidation) internal pure returns(uint){
+    function _liquidationThresold(
+         uint _valueLoan,
+         uint _rateLiquidation,
+         uint _amountCollateral) internal pure returns(uint){
         return (
-            //uint _priceCollateralETH,
-            //(_priceCollateralETH * _priceBorrowEth)/(_rateLiquidation * _priceBorrowEth)
-            _priceBorrowEth * _rateLiquidation 
+
+             //loan *rate => ltv / total collateral
+            (_valueLoan * _rateLiquidation)/_amountCollateral
+
+           
+          
+            //_priceBorrowEth * _rateLiquidation 
 
         );
     }
@@ -62,9 +69,9 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
     function _findContractLending(address _to,uint _id)internal view returns(LendingContract memory){
         return userLendingContract[_to][_id];
     }
-     function _findArrayindexContract(address _to,uint deleteId)internal view returns(uint,bool){
+     function _findArrayindexContract(address _to,uint _Id)internal view returns(uint,bool){
             for(uint i=0 ;i<listContractUser[_to].length;i++){
-                if (deleteId == listContractUser[_to][i]){
+                if (_Id == listContractUser[_to][i]){
                     return (i,true);
                 }
             }
@@ -143,3 +150,23 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
 
 
 }
+
+
+
+
+
+
+/**
+    weth = 1.100$
+
+
+    prendo in prestito 20.000 usdc e do a collaterale con un fattore di 3  60 weth ( prezzo 1.000  minimo) 
+
+
+    valore 66k
+    loan *rate => ltv / total collateral
+    20.000 * 3 => 60.000 / amount weth
+
+
+
+ */
