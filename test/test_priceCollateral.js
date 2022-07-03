@@ -57,8 +57,7 @@ contract("ThresoldLiquidation",async accounts =>{
         //account1
 
         // deposit 100k usdc  rate 2 apr 4.5%  penality 8% btc collateral
-        await usdc.approve(lendingP.address,"1000000"+decimal,{from:account1})
-        
+        await usdc.approve(lendingP.address,"1000000"+decimal,{from:account1})  
         await lendingP.deposit(
              usdc.address,
              "1000000"+decimal,// amount
@@ -68,14 +67,8 @@ contract("ThresoldLiquidation",async accounts =>{
              btc.address, // address collateral
              2,//rate
              {from:account1}
-           )
-
-        
+           )    
     })
-    
-    
-    
-
      //BORROW FUNCTION
     it("Take borrow + check asset and contract data account 2 ", async ()=>{
         // single loan position
@@ -87,14 +80,64 @@ contract("ThresoldLiquidation",async accounts =>{
         await btc.approve(lendingP.address,"50"+decimal,{from :account2})
         await lendingP.executeBorrow(1,account1,'200000'+decimal,btc.address,'44'+decimal,{from:account2})
         let result  =await lendingP.findContractLending(account1,1)
-        console.log(result) 
+        //console.log(result) 
         let position = await lendingP.serchBorrowerPositionXContract(1,account2)
-        console.log(position)
-        await lendingP.executeBorrow(1,account1,'100000'+decimal,btc.address,0,{from:account2})
+        //console.log(position)
+        await lendingP.executeBorrow(1,account1,'20000'+decimal,btc.address,0,{from:account2})
+        position = await lendingP.serchBorrowerPositionXContract(1,account2)
+        //console.log(position)
+            
+    })
+
+    it("Create  new lending Contract Account 3 ", async ()=>{
+        const usdc = await mockUsdc.deployed();
+        const weth = await mockWeth.deployed();
+        const btc = await mockWbtc.deployed(); 
+        const lendingP = await LendingPage.deployed();
+
+        //account1
+
+        // deposit 100k usdc  rate 2 apr 4.5%  penality 8% btc collateral
+        await usdc.approve(lendingP.address,"1000000"+decimal,{from:account3})  
+        await lendingP.deposit(
+             usdc.address,
+             "1000000"+decimal,// amount
+             4.5*100, // apr
+             3600,//death line
+             8,//penality
+             weth.address, // address collateral
+             3,//rate
+             {from:account3}
+           )
+
+        
+    })
+    it("Take borrow + check asset and contract data account 2 from contract 2  ", async ()=>{
+        // single loan position
+        const usdc = await mockUsdc.deployed();
+        const btc = await mockWbtc.deployed();
+        const lendingP = await LendingPage.deployed();
+        const weth = await mockWeth.deployed();
+
+        await weth.approve(lendingP.address,"6"+decimal,{from :account2})
+        await lendingP.executeBorrow(2,account3,'1000'+decimal,weth.address,'4'+decimal,{from:account2})
+        let result  =await lendingP.findContractLending(account1,1)
+        //console.log(result) 
+        let position = await lendingP.serchBorrowerPositionXContract(2,account2)
+        //console.log(position)
+        await lendingP.executeBorrow(2,account3,'2000'+decimal,weth.address,'2'+decimal,{from:account2})
         position = await lendingP.serchBorrowerPositionXContract(1,account2)
         console.log(position)
             
     })
+    it("Decrease deposit contract 1  + chek (yes Borrow)", async ()=>{
+        const lendingP = await LendingPage.deployed();
+        let result  =await lendingP.findContractLending(account1,1)
+        console.log("before " + result)
+        await lendingP.decreasDeposit(1, "250000"+decimal,{from:account1})
+        result  = await lendingP.findContractLending(account,1)
+        //console.log("after" + result)       
+      })
    
     
 })

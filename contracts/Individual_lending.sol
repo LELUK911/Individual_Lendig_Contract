@@ -220,25 +220,18 @@ contract lendingPage is CoreFunction {
         if(!responseSrc){
             _newBorrower(_to,_lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation);
         }else{
-            //_liquidationThresold( uint _priceBorrowEth,uint _rateLiquidation)
-            //require(_liquidationThresold(
-            //              oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) * borrowersXid[_idContract][indexBorrow].amountCollateral,
-            //               _rateLiquidation,
-            //               borrowersXid[_idContract][indexBorrow].amountCollateral+_amountCollateral) > borrowersXid[_idContract][indexBorrow].liquidationThreshold,"qui");
             _oldBorrower(_to, _lender, _idContract, _assettCollateral, _amountCollateral, _amountBorrow, _rateLiquidation, indexBorrow);
-
         }
-
         emit Borrow(_to, _idContract, _amountBorrow);
     }
     function _oldBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation,uint indexBorrow)internal {
         require(_to == borrowersXid[_idContract][indexBorrow].owner, "Not owner this loan" );
-        //require(_healFactor( oraclePrice(borrowersXid[_idContract][indexBorrow].assetCollaterl)
-        //        *(borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral),
-        //                     oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow) 
-        //                     *(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow)
-        //                     )> userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral"); 
-
+        require(
+            _healFactor(
+                oraclePrice( _assettCollateral)*borrowersXid[_idContract][indexBorrow].amountCollateral + _amountCollateral,
+                oraclePrice(borrowersXid[_idContract][indexBorrow].assetBorrow)*(borrowersXid[_idContract][indexBorrow].ammounBorrow + _amountBorrow))
+                >userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral qui"
+        );
         IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
         borrowersXid[_idContract][indexBorrow].ammounBorrow += _amountBorrow;// aggiornata la variabile globale
         borrowersXid[_idContract][indexBorrow].amountCollateral += _amountCollateral;// aggiornata la variabile globale
@@ -255,11 +248,10 @@ contract lendingPage is CoreFunction {
 
     }
     function _newBorrower(address _to,address _lender,uint _idContract,address _assettCollateral,uint _amountCollateral,uint _amountBorrow, uint _rateLiquidation)internal {
-        
-        //(uint _priceCollateralETH, uint _priceBorrowEth)
-        //require(_healFactor(oraclePrice(_assettCollateral) * _amountCollateral,
-        //    oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow) 
-        //    > userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral amount");
+        require(_healFactor(
+            oraclePrice(_assettCollateral)*_amountCollateral,
+             oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow )
+            > userLendingContract[_lender][_idContract].rateCollateral,"insufficient collateral amount");
         
         IERC20(_assettCollateral).transferFrom(_to, address(this), _amountCollateral);
         Borrower memory newBorrower = Borrower(
@@ -278,7 +270,6 @@ contract lendingPage is CoreFunction {
                                             block.timestamp,
                                             _findContractLending(_lender,_idContract).apr,
                                             _lender
-
                                             );
         borrowersXid[_idContract].push(newBorrower);
         userLendingContract[_lender][_idContract].amountAvvalible -=_amountBorrow;// togliamo le coin prestare
@@ -515,3 +506,23 @@ contract lendingPage is CoreFunction {
 
 
 }
+
+
+
+
+
+  
+        // devo vedere se  il collaterale è abbastanza da coprire il prestito 
+
+        // valore del collaterale in dollari 
+        //uint valoreCollaterale = oraclePrice(_assettCollateral)* _amountCollateral;
+        ////valore prestito in dollari
+        //uint valorePrestito = oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow;
+        //uint rate = userLendingContract[_lender][_idContract].rateCollateral;
+        //require(valoreCollaterale/valorePrestito > rate, "mi sono rotto le palle" );
+
+        //require(
+        //    oraclePrice(_assettCollateral)*_amountCollateral/
+        //    oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow 
+        //     > userLendingContract[_lender][_idContract].rateCollateral,"qui"
+        //);

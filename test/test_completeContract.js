@@ -292,35 +292,10 @@ contract("FINAL TEST",async accounts =>{
         let result  =await lendingP.findContractLending(account1,2)
         //console.log("Take loan contract Id 2 " + result) 
         let position = await lendingP.serchBorrowerPositionXContract(2,account4)
-        console.log(position)
+        //console.log(position)
             
     })
-    it("Take borrow + check asset and contract data accounta 5 ", async ()=>{
-        // take usdc from contract 4 
-        // dep usdc in contract 3 and loan weth 
-        const usdc = await mockUsdc.deployed();
-        const weth = await mockWeth.deployed();
-        const btc = await mockWbtc.deployed();
-        const lendingP = await LendingPage.deployed();
-        
-        const result  =await lendingP.findContractLending(account2,4)
-        //console.log(result) //CHECK
-        await weth.approve(lendingP.address,'2000'+decimal,{from:account5})
-        await lendingP.executeBorrow(4,account2,'1000'+decimal,weth.address,"17"+decimal,{from:account5})
-        result  = await lendingP.findContractLending(account2,4)
-        console.log(result)
-
-        await weth.approve(lendingP.address,'200'+decimal,{from:account5})
-        await lendingP.executeBorrow(3,account2,'2'+decimal,weth.address,"200"+decimal,{from:account5})
-
-        //result  = await lendingP.findContractLending(account2,3)
-        console.log(result)
-      
-    
-    
-    
-    
-    })
+  
     //SEARCH
 
 })
