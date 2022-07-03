@@ -25,7 +25,7 @@ contract("ThresoldLiquidation",async accounts =>{
         await lendingP.setAssettAvvalible(btc.address)
 
         await lendingP.setMockPrice(usdc.address,"1"+decimal)// price usd  1$
-        await lendingP.setMockPrice(weth.address,"1063390000000000000000")// price eth 1063.39$
+        await lendingP.setMockPrice(weth.address,"1063"+decimal)// price eth 1063.39$
         await lendingP.setMockPrice(btc.address,"19355"+decimal)//")// price btc 19355.13$
   
     })
@@ -67,7 +67,7 @@ contract("ThresoldLiquidation",async accounts =>{
              btc.address, // address collateral
              2,//rate
              {from:account1}
-           )    
+           )   
     })
      //BORROW FUNCTION
     it("Take borrow + check asset and contract data account 2 ", async ()=>{
@@ -88,7 +88,6 @@ contract("ThresoldLiquidation",async accounts =>{
         //console.log(position)
             
     })
-
     it("Create  new lending Contract Account 3 ", async ()=>{
         const usdc = await mockUsdc.deployed();
         const weth = await mockWeth.deployed();
@@ -119,25 +118,64 @@ contract("ThresoldLiquidation",async accounts =>{
         const lendingP = await LendingPage.deployed();
         const weth = await mockWeth.deployed();
 
-        await weth.approve(lendingP.address,"6"+decimal,{from :account2})
+        await weth.approve(lendingP.address,"12"+decimal,{from :account2})
         await lendingP.executeBorrow(2,account3,'1000'+decimal,weth.address,'4'+decimal,{from:account2})
         let result  =await lendingP.findContractLending(account1,1)
         //console.log(result) 
         let position = await lendingP.serchBorrowerPositionXContract(2,account2)
         //console.log(position)
-        await lendingP.executeBorrow(2,account3,'2000'+decimal,weth.address,'2'+decimal,{from:account2})
+        await lendingP.executeBorrow(2,account3,'1000'+decimal,weth.address,'4'+decimal,{from:account2})
         position = await lendingP.serchBorrowerPositionXContract(1,account2)
-        console.log(position)
+        //console.log(position)
             
     })
     it("Decrease deposit contract 1  + chek (yes Borrow)", async ()=>{
         const lendingP = await LendingPage.deployed();
         let result  =await lendingP.findContractLending(account1,1)
-        console.log("before " + result)
+        //console.log("before " + result)
         await lendingP.decreasDeposit(1, "250000"+decimal,{from:account1})
-        result  = await lendingP.findContractLending(account,1)
+        result  = await lendingP.findContractLending(account1,1)
         //console.log("after" + result)       
+    })
+    it("decreas plus of possibility", async ()=>{
+        const lendingP = await LendingPage.deployed();
+        let result  =await lendingP.findContractLending(account1,1)
+        //console.log("before " + result)
+        await truffleAssert.reverts(
+           lendingP.decreasDeposit(1, "2000000"+decimal,{from:account1})
+        )
+    })
+    it("don't borrow unlimited coin", async ()=>{
+        const lendingP = await LendingPage.deployed();
+        const btc = await mockWbtc.deployed();
+
+        //console.log(position)
+        await truffleAssert.reverts(
+            lendingP.executeBorrow(1,account1,'200000'+decimal,btc.address,0,{from:account2})
+
+        ) 
+    })
+    it("repay partial loan ", async ()=>{
+        const usdc = await mockUsdc.deployed();
+        const lendingP = await LendingPage.deployed();
+    
+        await usdc.approve(lendingP.address,'32000'+decimal,{from:account2})
+        let position = await lendingP.serchBorrowerPositionXContract(1,account2);
+        //console.log(position)
+        await lendingP.executeRepay(1,'32000'+decimal,{from:account2})
+        position = await lendingP.serchBorrowerPositionXContract(1,account2);
+        //console.log(position)
+    
+        //result  =await lendingP.findContractLending(account1,1)
+        //console.log(result)
+        
+            
+    })
+    it("check interest loan",async ()=>{
+        const lendingP = await LendingPage.deployed();
+    
+        const loanStatus  = await lendingP.viewAmountLoan(account2,1);
+        console.log(String(loanStatus))
       })
-   
     
 })
