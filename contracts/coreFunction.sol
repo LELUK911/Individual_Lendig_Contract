@@ -128,6 +128,14 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
         userLendingContract[_to][_idContract].duration += _time; 
     }
 
+    function _oraclePrice(address _asset)public view returns(uint) {
+        //return (SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])))*10**10; 
+        
+        ////mock
+        return mockprice[_asset];
+        ///
+    }
+
 
 
     /////

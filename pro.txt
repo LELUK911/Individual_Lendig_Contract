@@ -1,0 +1,22 @@
+before liquidation
+[LENDER
+  amountAvvalible:  '778.999',
+  amountBorrow:     '220.000',
+  amountCollateral:     '44'
+]
+[BORROWER
+  ammounBorrow:         '220.000',
+  amountCollateral:         '44',
+  liquidationThreshold:  '10.000',
+]
+after liquidation
+[LENDER
+  amountAvvalible:  '778.999,99',
+  amountBorrow:     '165.000,00',- 55.000,00$
+  amountCollateral:     '36,78' - 7,22 BTC
+]
+[BORROWER
+  ammounBorrow:         '165.000,00',
+  amountCollateral:         '36,78',
+  liquidationThreshold:   '8.971,96',
+]

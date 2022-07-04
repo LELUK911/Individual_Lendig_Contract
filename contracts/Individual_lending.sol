@@ -133,26 +133,29 @@ contract lendingPage is CoreFunction {
             emit newTimeExpireDecreas(_idContract, _timeIncreas);     
     }
     function _liquidationCall(address _to,uint _idContract,uint _idBorrow) internal contractOwner(_to, _idContract) {
-        require(borrowersXid[_idContract][_idBorrow].liquidationThreshold <= oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl),"thresold Liquidation price not achieved");
-                 
-        // 1/4 collateral
-        uint liquidationAmount = borrowersXid[_idContract][_idBorrow].amountCollateral /4; // parte da liquidare
-        borrowersXid[_idContract][_idBorrow].amountCollateral -= liquidationAmount;
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= liquidationAmount;
-        uint premiumLiquidation = ((liquidationAmount * 5)/100)+1;
-        liquidationAmount -= premiumLiquidation;
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
-        borrowersXid[_idContract][_idBorrow].ammounBorrow -= liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
+        require(borrowersXid[_idContract][_idBorrow].liquidationThreshold >= oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl),"thresold Liquidation price not achieved");           
+        // 1/8 del loan
+        uint liquidationAmount = 
+            (borrowersXid[_idContract][_idBorrow].ammounBorrow /6) * oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) // valore prestito da liquidare
+            /oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl); //quantita di collaterale equivalente
+        uint premiumLiquidation = ((liquidationAmount * 500)/10000)+1;
+        borrowersXid[_idContract][_idBorrow].amountCollateral -= (liquidationAmount+premiumLiquidation);
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= (liquidationAmount+premiumLiquidation); 
+        ////liquidationAmount -= premiumLiquidation;
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= (borrowersXid[_idContract][_idBorrow].ammounBorrow /6); //liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -= (borrowersXid[_idContract][_idBorrow].ammounBorrow /6);
         borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
              oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) * borrowersXid[_idContract][_idBorrow].ammounBorrow,
              userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral,
              borrowersXid[_idContract][_idBorrow].amountCollateral
              );
+        
+        balanceFee[borrowersXid[_idContract][_idBorrow].assetCollaterl] += ((premiumLiquidation/5)+1);
         IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
             borrowersXid[_idContract][_idBorrow].owner,
-            liquidationAmount + premiumLiquidation);
-     
-     emit LiquidationCall(_idContract,_idBorrow,borrowersXid[_idContract][_idBorrow].assetCollaterl,liquidationAmount + premiumLiquidation);
+            liquidationAmount +( premiumLiquidation-((premiumLiquidation/5)+1)));
+     //
+    emit LiquidationCall(_idContract,_idBorrow,borrowersXid[_idContract][_idBorrow].assetCollaterl,liquidationAmount + premiumLiquidation);
     }
     function _collateralSeizure(uint _idContract,uint _idBorrow) internal returns(uint){
         require(borrowersXid[_idContract][_idBorrow].expiration > block.timestamp,"loan not expired");
@@ -352,7 +355,7 @@ contract lendingPage is CoreFunction {
     function decreasDeposit(uint _idContract, uint _decreasAmount) external nonReentrant(){
         _decreasDeposit(msg.sender, _idContract, _decreasAmount);
     }
-    //deprecate
+ 
     function deleteContract(uint _idContract) external nonReentrant(){
         _deleteContract(msg.sender, _idContract);
     }
