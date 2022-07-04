@@ -20,3 +20,31 @@ after liquidation
   amountCollateral:         '36,78',
   liquidationThreshold:   '8.971,96',
 ]
+
+
+
+
+
+
+
+before liquidation
+  amountAvvalible:  '778.999.99',
+  amountBorrow:     '220.000.00',
+  amountCollateral:     '44.00'
+]
+[
+ 
+  ammounBorrow:     '220.000.00',
+  amountCollater        '44.00',
+]
+after liquidation
+[
+  amountAvvalible: '778.999.99',
+  amountBorrow:    '192.500.00', -27.000
+  amountCollateral:    '41,09'   -2,91
+]
+[
+ 
+  ammounBorrow:    '192.500.00',
+  amountCollateral:    '41.09',
+]

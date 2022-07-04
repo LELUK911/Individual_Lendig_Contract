@@ -85,18 +85,10 @@ contract("ThresoldLiquidation",async accounts =>{
         //console.log(position)
             
     })
-    //liquidationCall(uint _idContract,uint _idBorrow)
-    // setMockPrice(address _asset,uint _price)
-    //liquidation price 10000$ + decimal
     it("Liquidation position", async ()=>{
         const lendingP = await LendingPage.deployed();
         const btc = await mockWbtc.deployed();
-        
-          
-
-   
-        
-       
+    
         await lendingP.setMockPrice(btc.address,"9950"+decimal)
         //console.log("before liquidation")
         let result  = await lendingP.findContractLending(account1,1)
@@ -112,10 +104,10 @@ contract("ThresoldLiquidation",async accounts =>{
         position = await lendingP.serchBorrowerPositionXContract(1,account2)
         //console.log(position)
         let balanceFee = await btc.balanceOf(lendingP.address);
-        console.log(String(balanceFee))
+        //console.log(String(balanceFee))
         await lendingP.widrowFeeContract(btc.address);
         balanceFee = await btc.balanceOf(lendingP.address);
-        console.log(String(balanceFee))
+        //console.log(String(balanceFee))
     })
 
 

@@ -136,24 +136,24 @@ contract lendingPage is CoreFunction {
         require(borrowersXid[_idContract][_idBorrow].liquidationThreshold >= oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl),"thresold Liquidation price not achieved");           
         // 1/8 del loan
         uint liquidationAmount = 
-            (borrowersXid[_idContract][_idBorrow].ammounBorrow /6) * oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) // valore prestito da liquidare
+            ((borrowersXid[_idContract][_idBorrow].ammounBorrow *1700) /10000) * oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) // valore prestito da liquidare
             /oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl); //quantita di collaterale equivalente
         uint premiumLiquidation = ((liquidationAmount * 500)/10000)+1;
         borrowersXid[_idContract][_idBorrow].amountCollateral -= (liquidationAmount+premiumLiquidation);
         userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountCollateral -= (liquidationAmount+premiumLiquidation); 
         ////liquidationAmount -= premiumLiquidation;
-        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= (borrowersXid[_idContract][_idBorrow].ammounBorrow /6); //liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
-        borrowersXid[_idContract][_idBorrow].ammounBorrow -= (borrowersXid[_idContract][_idBorrow].ammounBorrow /6);
+        userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].amountBorrow -= ((borrowersXid[_idContract][_idBorrow].ammounBorrow *1700) /10000); //liquidationAmount * oraclePrice(borrowersXid[_idContract][_idBorrow].assetCollaterl);
+        borrowersXid[_idContract][_idBorrow].ammounBorrow -= ((borrowersXid[_idContract][_idBorrow].ammounBorrow *1700) /10000);
         borrowersXid[_idContract][_idBorrow].liquidationThreshold = _liquidationThresold(
              oraclePrice(borrowersXid[_idContract][_idBorrow].assetBorrow) * borrowersXid[_idContract][_idBorrow].ammounBorrow,
              userLendingContract[borrowersXid[_idContract][_idBorrow].lender][_idContract].rateCollateral,
              borrowersXid[_idContract][_idBorrow].amountCollateral
              );
         
-        balanceFee[borrowersXid[_idContract][_idBorrow].assetCollaterl] += ((premiumLiquidation/5)+1);
+        balanceFee[borrowersXid[_idContract][_idBorrow].assetCollaterl] += (((premiumLiquidation * 2000)/10000)+1);
         IERC20(borrowersXid[_idContract][_idBorrow].assetCollaterl).transfer(
             borrowersXid[_idContract][_idBorrow].owner,
-            liquidationAmount +( premiumLiquidation-((premiumLiquidation/5)+1)));
+            liquidationAmount +( premiumLiquidation-(((premiumLiquidation * 2000)/10000)+1)));
      //
     emit LiquidationCall(_idContract,_idBorrow,borrowersXid[_idContract][_idBorrow].assetCollaterl,liquidationAmount + premiumLiquidation);
     }
