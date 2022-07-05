@@ -7,15 +7,12 @@ import "../node_modules/@openzeppelin/contracts/utils/Counters.sol";
 
 contract Storage {
 
-    address[] internal assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)
-    uint internal minPenality;
     // User
     struct LendingContract {
         uint id;
         address owner;
         bool lock;
         address asset;
-        //uint amount;
         uint amountAvvalible;
         uint apr;
         uint duration;
@@ -27,12 +24,9 @@ contract Storage {
     }
     mapping(address => mapping(uint=>LendingContract)) internal userLendingContract;
     mapping(address => uint[])listContractUser;
-    uint[] internal listContract;
     mapping (address => mapping(address => uint)) internal userCreditExpire;
 
-
-
-    // borrower
+    // VAR BORROWER ---CORRECT NAME VAR.
 
     struct Borrower{
         address owner;
@@ -51,14 +45,15 @@ contract Storage {
     mapping(uint => Borrower[]) internal borrowersXid;
   
 
-  // contract var
+  // VAR CONTRACT
 
     Counters.Counter internal Id; // id every lending contract
-
+    address[] internal assetAvvalible; // asset add from Owner (only asset present in chainLink oracle)
+    uint internal minPenality;
     mapping(address => uint) internal balanceFee;
-
           //Asset => priceFeed
     mapping(address=>address) internal  addressPriceFeed;
     // assett/usd price
+    uint[] internal listContract;
 
 }

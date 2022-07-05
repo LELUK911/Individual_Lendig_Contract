@@ -17,7 +17,7 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
     using Counters for Counters.Counter;
     //function variable
     
-    //-------------------------------//
+ 
   
     // INTERNAL FUNCTION 
     function _setAssettAvvalible(address _newAsset) internal{
@@ -43,6 +43,11 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
             //_priceBorrowEth * _rateLiquidation 
 
         );
+    }
+    function _addAddressPriceeFeed(address _asset,address _addressPriceFeed) internal {
+        require(_asset != address(0) && _addressPriceFeed != address(0), "Set correct address" );
+        require(_findAsset(_asset),"insert new asset before set address PriceFeed");
+        addressPriceFeed[_asset] = _addressPriceFeed;
     }
     //-----> Serch function  
     function _findAsset(address _asset) internal view returns(bool){
@@ -86,7 +91,7 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
          }
         return (0,false); 
     }
-     //------> Search function Borrower
+    //------> Search function Borrower
     function _serchIndexBorrowerXContract(uint _idContract,address _borrower) internal view returns(bool,uint){
       for(uint i =0; i<borrowersXid[_idContract].length;i++ ){
           if(borrowersXid[_idContract][i].owner == _borrower){
@@ -104,21 +109,34 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
        revert("Borrower for this contract not present");
     }
 
-     event widrowFeeEvent(address indexed asset,uint amount);
 
+    // EXTERNAL FUNCTION 
     function widrowFeeContract(address _asset)external onlyOwner() nonReentrant(){
         _widrowFeeContract(_asset);
     }
-
-    // FUNCTION SET PRICE FEED //
-   
-    function _addAddressPriceeFeed(address _asset,address _addressPriceFeed) internal {
-        require(_asset != address(0) && _addressPriceFeed != address(0), "Set correct address" );
-        require(_findAsset(_asset),"insert new asset before set address PriceFeed");
-        addressPriceFeed[_asset] = _addressPriceFeed;
+    function addAddressPriceeFeed(address _asset,address _addressPriceFeed) external onlyOwner(){
+        _addAddressPriceeFeed(_asset,_addressPriceFeed);
+    }
+    function _userCreditExpire(address _user,address _asset) external view returns(uint balance){
+        balance = userCreditExpire[_user][_asset];
+    }
+    function _viewFeeContract(address _asset)external view returns(uint balance) {
+      balance = balanceFee[_asset];
     }
 
-    //mock oracle
+    // RESTORE AFTER TEST
+    function oraclePrice(address _asset)internal view returns(uint) {
+       //return (SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])))*10**10; 
+        
+        ////mock
+        return mockprice[_asset];
+        ///
+    }
+
+
+
+
+    //--------------MOCK FUNCTION DELETE AFTER TEST--------------------// 
     mapping(address=>uint) public mockprice;
     function setMockPrice(address _asset,uint _price) public{
         mockprice[_asset] = _price;
@@ -142,18 +160,10 @@ contract CoreFunction is Storage,Ownable,ReentrancyGuard,PriceConsumerV3 {
 
 
 
-    function oraclePrice(address _asset)internal view returns(uint) {
-        //return (SafeCast.toUint256(getLatestPrice(addressPriceFeed[_asset])))*10**10; 
-        
-        ////mock
-        return mockprice[_asset];
-        ///
-    }
+ 
+    event widrowFeeEvent(address indexed asset,uint amount);
 
-
-    function addAddressPriceeFeed(address _asset,address _addressPriceFeed) external onlyOwner(){
-        _addAddressPriceeFeed(_asset,_addressPriceFeed);
-    }
+ 
 
 
 

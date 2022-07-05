@@ -109,6 +109,14 @@ contract("ThresoldLiquidation",async accounts =>{
         balanceFee = await btc.balanceOf(lendingP.address);
         //console.log(String(balanceFee))
     })
+    it("first amount loan + interest",async()=>{
+        const lendingP = await LendingPage.deployed();
+        
+        let loan = await lendingP.viewAmountLoan(account2,1)
+        console.log(String(loan))
+        loan = await lendingP.viewAmountLoan(account2,1)
+        console.log(String(loan))    
+    })
 
 
     })

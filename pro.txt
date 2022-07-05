@@ -1,50 +1,37 @@
-before liquidation
-[LENDER
-  amountAvvalible:  '778.999',
-  amountBorrow:     '220.000',
-  amountCollateral:     '44'
-]
-[BORROWER
-  ammounBorrow:         '220.000',
-  amountCollateral:         '44',
-  liquidationThreshold:  '10.000',
-]
-after liquidation
-[LENDER
-  amountAvvalible:  '778.999,99',
-  amountBorrow:     '165.000,00',- 55.000,00$
-  amountCollateral:     '36,78' - 7,22 BTC
-]
-[BORROWER
-  ammounBorrow:         '165.000,00',
-  amountCollateral:         '36,78',
-  liquidationThreshold:   '8.971,96',
-]
+[
 
-
-
-
-
-
-
-before liquidation
-  amountAvvalible:  '778.999.99',
-  amountBorrow:     '220.000.00',
-  amountCollateral:     '44.00'
+  amountAvvalible: '778.999,99',
+  amountBorrow:    '220.000,00',
 ]
 [
- 
-  ammounBorrow:     '220.000.00',
-  amountCollater        '44.00',
+  ammounBorrow: '220.000,00',
 ]
-after liquidation
+after operation
 [
-  amountAvvalible: '778.999.99',
-  amountBorrow:    '192.500.00', -27.000
-  amountCollateral:    '41,09'   -2,91
+
+  amountAvvalible: '878.799,99',
+  amountBorrow:    '120.200.00,',
 ]
-[
- 
-  ammounBorrow:    '192.500.00',
-  amountCollateral:    '41.09',
+[  
+  ammounBorrow: '120.200,00',
 ]
+0
+
+
+
+
+
+      // devo vedere se  il collaterale è abbastanza da coprire il prestito 
+
+        // valore del collaterale in dollari 
+        //uint valoreCollaterale = oraclePrice(_assettCollateral)* _amountCollateral;
+        ////valore prestito in dollari
+        //uint valorePrestito = oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow;
+        //uint rate = userLendingContract[_lender][_idContract].rateCollateral;
+        //require(valoreCollaterale/valorePrestito > rate, "mi sono rotto le palle" );
+
+        //require(
+        //    oraclePrice(_assettCollateral)*_amountCollateral/
+        //    oraclePrice(userLendingContract[_lender][_idContract].asset)*_amountBorrow 
+        //     > userLendingContract[_lender][_idContract].rateCollateral,"qui"
+        //);
